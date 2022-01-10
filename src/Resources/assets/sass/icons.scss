@@ -1,0 +1,17 @@
+.time-slot-icon {
+    width: 48px;
+    height: 48px;
+    display: inline-block;
+    background-size: cover;
+    background-image: url("../images/Icon-PWA.svg");
+}
+
+.active {
+    .time-slot-icon {
+        background-image: url("../images/Icon-PWA-Active.svg");
+    }
+
+    &.time-slot-icon {
+        background-image: url("../images/Icon-PWA-Active.svg");
+    }
+}

@@ -1,0 +1,32 @@
+@import "icons";
+
+.navbar-left {
+    width: 100px;
+
+    ul.menubar li.menu-item {
+        padding: 10px 7px;
+    }
+}
+
+.content-container {
+    padding-left: 100px;
+}
+
+//view order
+@media (min-width: 768px) {
+    .order-status {
+        margin-top: 6px;
+        padding: 5px 10px;
+    }
+}
+
+.order-status {
+    border: 3px solid #ccc;
+    border-radius: 3px;
+    display: inline-block;
+    margin: 15px 0 0;
+    padding: 2px 10px;
+    text-transform: uppercase;
+    vertical-align: top;
+}
+
