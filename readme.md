@@ -17,7 +17,7 @@ It packs in lots of demanding features that allows your business to scale in no 
 
 - **Bagisto**: v1.3.3
 
-## Installation with composer:
+## Installation :
 - Run the following command
 ```
 composer require bagisto/bagisto-delivery-time-slot
@@ -39,46 +39,9 @@ php artisan migrate
 php artisan route:cache
 php artisan optimize
 ```
-
 ```
 php artisan vendor:publish --force
 ```
 -> Press the number before DeliveryTimeSlotServiceProvider and then press enter to publish all assets and configurations.
-
-## Installation without composer:
-
-- Unzip the respective extension zip and then merge "packages" folder into project root directory.
-- Goto config/app.php file and add following line under 'providers'
-
-```
-Webkul\DeliveryTimeSlot\Providers\DeliveryTimeSlotServiceProvider::class
-```
-
-- Goto composer.json file and add following line under 'psr-4'
-
-```
-"Webkul\\DeliveryTimeSlot\\": "packages/Webkul/DeliveryTimeSlot"
-```
-
-- Run these commands below to complete the setup
-
-```
-composer dump-autoload
-```
-```
-php artisan optimize
-```
-```
-php artisan migrate
-```
-```
-php artisan route:clear
-```
-
-```
-php artisan vendor:publish --force
-```
--> Press the number before DeliveryTimeSlotServiceProvider and then press enter to publish all assets and configurations.
-
 
 > That's it, now just execute the project on your specified domain.
