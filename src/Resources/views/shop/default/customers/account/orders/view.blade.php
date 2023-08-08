@@ -7,7 +7,7 @@
 @section('content-wrapper')
 
 @push('css')
-    <link rel="stylesheet" href="{{ bagisto_asset('css/delivery-time-slot.css') }}">
+<link rel="stylesheet" href="{{ asset('vendor/delivery-time-slot/assets/css/delivery-time-slot.css') }}">
 @endpush
 
     <div class="account-content">
@@ -16,7 +16,7 @@
         <div class="account-layout">
 
             <div class="account-head">
-                <span class="back-icon"><a href="{{ route('customer.orders.index') }}"><i class="icon icon-menu-back"></i></a></span>
+                <span class="back-icon"><a href="{{ route('shop.customer.orders.index') }}"><i class="icon icon-menu-back"></i></a></span>
 
                 <span class="account-heading">
                     {{ __('shop::app.customer.account.order.view.page-tile', ['order_id' => $order->increment_id]) }}
@@ -25,7 +25,7 @@
 
 
                 @if ($order->canCancel())
-                    <form id="cancelOrderForm" action="{{ route('customer.orders.cancel', $order->id) }}" method="post">
+                    <form id="cancelOrderForm" action="{{ route('shop.customer.orders.cancel', $order->id) }}" method="post">
                         @csrf
                     </form>
 
@@ -231,7 +231,7 @@
                                     <div class="secton-title">
                                         <span>{{ __('shop::app.customer.account.order.view.individual-invoice', ['invoice_id' => $invoice->increment_id ?? $invoice->id]) }}</span>
 
-                                        <a href="{{ route('customer.orders.print', $invoice->id) }}" class="pull-right">
+                                        <a href="{{ route('shop.customer.orders.print', $invoice->id) }}" class="pull-right">
                                             {{ __('shop::app.customer.account.order.view.print') }}
                                         </a>
                                     </div>

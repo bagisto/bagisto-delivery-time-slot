@@ -51,6 +51,10 @@ class DeliveryTimeSlotServiceProvider extends ServiceProvider
 
         /*** Velocity Theme page override ***/
         $this->publishes([
+            __DIR__ . '/../Resources/views/shop/velocity/checkout/cart/index.blade.php' => resource_path('themes/velocity/views/checkout/cart/index.blade.php'),
+        ]);
+
+        $this->publishes([
             __DIR__ . '/../Resources/views/shop/velocity/checkout/onepage.blade.php' => resource_path('themes/velocity/views/checkout/onepage.blade.php'),
         ]);
 
@@ -76,17 +80,13 @@ class DeliveryTimeSlotServiceProvider extends ServiceProvider
         ]);
 
         $this->publishes([
-            __DIR__ . '/../Resources/views/emails/' => resource_path('views/vendor/emails/'),
+            __DIR__ . '/../Resources/views/admin/layouts/nav-left.blade.php' => resource_path('views/vendor/admin/layouts/nav-left.blade.php'),
         ]);
 
         /*** Assets of themes override ***/
-        // $this->publishes([
-        //     __DIR__ . '/../../publishable/assets' => public_path('themes/default/assets'),
-        // ], 'public');
-
-        // $this->publishes([
-        //     __DIR__ . '/../../publishable/assets/' => public_path('themes/velocity/assets'),
-        // ], 'public');
+        $this->publishes([
+            __DIR__ . '/../../publishable/assets' => public_path('vendor/delivery-time-slot/assets'),
+        ], 'public');
 
         $this->overrideModels();
 

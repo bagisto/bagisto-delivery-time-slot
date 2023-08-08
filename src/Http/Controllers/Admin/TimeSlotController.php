@@ -2,9 +2,13 @@
 
 namespace Webkul\DeliveryTimeSlot\Http\Controllers\Admin;
 
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use Webkul\Customer\Repositories\CustomerRepository;
 use Webkul\Sales\Repositories\OrderRepository as Order;
 use Webkul\DeliveryTimeSlot\Http\Controllers\Controller;
+use Webkul\DeliveryTimeSlot\DataGrids\Admin\DeliveyOrdersDataGrid;
+use Webkul\DeliveryTimeSlot\DataGrids\Admin\DeliveyTimeSlotsDataGrid;
 use Webkul\DeliveryTimeSlot\Repositories\DeliveryTimeSlotsRepository;
 use Webkul\DeliveryTimeSlot\Repositories\DeliveryTimeSlotsOrdersRepository;
 
@@ -27,7 +31,7 @@ class TimeSlotController extends Controller
     /**
      * TimeSlotsRepository object
      *
-     * @var array
+     * @var object
      */
     protected $timeSlotsRepository;
 
@@ -97,8 +101,38 @@ class TimeSlotController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store()
+    public function store(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'delivery_day'     => ['required', 'array'],
+            'delivery_day.*'   => ['required'],
+            'start_time'       => ['required', 'array'],
+            'start_time.*'     => ['required'],
+            'end_time'         => ['required', 'array'],
+            'end_time.*'       => ['required'],
+            'time_delivery_quota' => ['required', 'array'],
+            'time_delivery_quota.*' => ['required'],
+            'visibility' => ['required', 'array'],
+            'visibility.*' => ['required'],
+        ]);
+    
+        $validator->after(function ($validator) use ($request) {
+            $timeSlots = [];
+            foreach ($request->delivery_day as $index => $day) {
+                $slot = $day . $request->start_time[$index];
+                if (in_array($slot, $timeSlots)) {
+                    $validator->errors()->add('start_time.' . $index, trans('delivery-time-slot::app.admin.layouts.start-time-error'));
+                }
+                $timeSlots[] = $slot;
+            }
+        });
+    
+        if ($validator->fails()) {
+            session()->flash('error', $validator->errors()->first());
+
+            return redirect()->back();
+        }
+
         $data = request()->except('_token');
 
         $previousData = $this->timeSlotsRepository->findWhere([
@@ -137,20 +171,15 @@ class TimeSlotController extends Controller
 
         foreach ($data['id'] as $exisitingValue => $id) {
 
-            $result = $this->timeSlotsRepository->findOneWhere(
-                ['id' => $id,
-                ]);
+            $result = $this->timeSlotsRepository->findOneWhere(['id' => $id]);
 
             if ($result) {
-
-                // conver 24H to 12H
-                $startTime = date("g:i a", strtotime("{$data['start_time'][$exisitingValue]}"));
-                $endTime = date("g:i a", strtotime("{$data['end_time'][$exisitingValue]}"));
                 $result->update([
                     'delivery_day' => $data['delivery_day'][$exisitingValue],
-                    'start_time' => strtoupper($startTime),
-                    'end_time' => strtoupper($endTime),
+                    'start_time' => $data['start_time'][$exisitingValue],
+                    'end_time' => $data['end_time'][$exisitingValue],
                     'time_delivery_quota' => $data['time_delivery_quota'][$exisitingValue],
+                    'visibility' => $data['visibility'][$exisitingValue],
                     'is_seller' => 0,
                     'minimum_time_required' => $data['minimum_time_required']
                 ]);
@@ -159,27 +188,28 @@ class TimeSlotController extends Controller
 
         foreach ($data['delivery_day'] as $key => $value) {
 
-            if (  ! in_array($data['id'][$key], array_filter($data['id']))) {
-
-                // convert 24H to 12H
-                $startTime = date("g:i a", strtotime("{$data['start_time'][$key]}"));
-                $endTime = date("g:i a", strtotime("{$data['end_time'][$key]}"));
+            if (! in_array($data['id'][$key], array_filter($data['id']))) {
                 $insert = [
                     'delivery_day' => $value,
-                    'start_time' => strtoupper($startTime),
-                    'end_time' => strtoupper($endTime),
+                    'start_time' => $data['start_time'][$key],
+                    'end_time' => $data['end_time'][$key],
                     'time_delivery_quota' => $data['time_delivery_quota'][$key],
+                    'visibility' => $data['visibility'][$key],
                     'is_seller' => 0,
                     'minimum_time_required' => (int)$data['minimum_time_required']
                 ];
 
-                $this->timeSlotsRepository->create($insert);
+                $data = $this->timeSlotsRepository->findWhere($insert);
+
+                if (! empty($data)) {
+                    $this->timeSlotsRepository->create($insert);
+                }
             }
         }
 
         session()->flash('success', 'Delivery Time Slots Created.');
 
-        return redirect()->route('admin.timeslot.index');
+        return redirect()->back();
     }
 
     /**
@@ -190,6 +220,11 @@ class TimeSlotController extends Controller
      */
     public function deliveryOrders()
     {
+        if (request()->ajax()) {
+
+            return app(DeliveyOrdersDataGrid::class)->toJson();
+        }
+
         return view($this->_config['view']);
     }
 
@@ -201,6 +236,11 @@ class TimeSlotController extends Controller
      */
     public function deliverySlots()
     {
+        if (request()->ajax()) {
+
+            return app(DeliveyTimeSlotsDataGrid::class)->toJson();
+        }
+        
         return view($this->_config['view']);
     }
 

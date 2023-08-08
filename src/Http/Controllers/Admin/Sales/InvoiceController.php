@@ -78,11 +78,11 @@ class InvoiceController extends Controller
             abort(404);
         }
 
-        if ( core()->getConfigData('delivery_time_slot.settings.general.status') ) {
+        if (core()->getConfigData('delivery_time_slot.settings.general.status')) {
             $deliveryTimeSlot = $this->deliveryTimeSlotsOrdersRepository->findOneByField('order_id', $orderId);
 
             $timeSlotData = [];
-            if ( $deliveryTimeSlot ) {
+            if ($deliveryTimeSlot) {
                 foreach ($order->items as $key => $item) {
                     if ($item->type == 'configurable') {
                         $item = $item->child;
@@ -93,7 +93,7 @@ class InvoiceController extends Controller
                         'customer_id'   => $order->customer_id
                     ]);
 
-                    if ( $deliveryTimeSlot ) {
+                    if ($deliveryTimeSlot) {
                         $this->orderSlots->push([
                             'items'         => [$item],
                             'timeOrderSlot' => $deliveryTimeSlot
@@ -122,11 +122,11 @@ class InvoiceController extends Controller
         $invoice = $this->invoiceRepository->findOrFail($id);
         $orderId = $invoice->order_id;
 
-        if ( core()->getConfigData('delivery_time_slot.settings.general.status') ) {
+        if (core()->getConfigData('delivery_time_slot.settings.general.status')) {
             $deliveryTimeSlot = $this->deliveryTimeSlotsOrdersRepository->findOneByField('order_id', $orderId);
 
             $timeSlotData = [];
-            if ( $deliveryTimeSlot ) {
+            if ($deliveryTimeSlot) {
                 foreach ($invoice->items as $key => $item) {
                     if ($item->type == 'configurable') {
                         $item = $item->child;
@@ -136,7 +136,7 @@ class InvoiceController extends Controller
                         'order_id'      => $orderId
                     ]);
 
-                    if ( $deliveryTimeSlot ) {
+                    if ($deliveryTimeSlot) {
                         $this->orderSlots->push([
                             'items'         => [$item],
                             'timeOrderSlot' => $deliveryTimeSlot
@@ -165,11 +165,11 @@ class InvoiceController extends Controller
         $invoice = $this->invoiceRepository->findOrFail($id);
         $orderId = $invoice->order_id;
 
-        if ( core()->getConfigData('delivery_time_slot.settings.general.status') ) {
+        if (core()->getConfigData('delivery_time_slot.settings.general.status')) {
             $deliveryTimeSlot = $this->deliveryTimeSlotsOrdersRepository->findOneByField('order_id', $orderId);
 
             $timeSlotData = [];
-            if ( $deliveryTimeSlot ) {
+            if ($deliveryTimeSlot) {
                 foreach ($invoice->items as $key => $item) {
                     if ($item->type == 'configurable') {
                         $item = $item->child;
@@ -179,7 +179,7 @@ class InvoiceController extends Controller
                         'order_id'      => $orderId
                     ]);
 
-                    if ( $deliveryTimeSlot ) {
+                    if ($deliveryTimeSlot) {
                         $this->orderSlots->push([
                             'items'         => [$item],
                             'timeOrderSlot' => $deliveryTimeSlot

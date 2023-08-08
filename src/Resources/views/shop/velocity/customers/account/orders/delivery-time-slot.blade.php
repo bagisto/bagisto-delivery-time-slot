@@ -29,9 +29,13 @@
                         {{ $timeSlot['timeOrderSlot']['delivery_date'] }}
                     </p>
                     <p><strong>Delivery Time: </strong>
-                        {{ $timeSlot['timeOrderSlot']['time_slot']['start_time'] }}
-                        <b> - </b>
-                        {{ $timeSlot['timeOrderSlot']['time_slot']['end_time'] }}
+                        @if (core()->getConfigData('delivery_time_slot.settings.general.display_time_format') == 12)
+                            {{ date('h:i A', strtotime($timeSlot['timeOrderSlot']['time_slot']['start_time'])) }} -
+                            {{ date('h:i A', strtotime($timeSlot['timeOrderSlot']['time_slot']['end_time'])) }}
+                        @else                                
+                            {{ $timeSlot['timeOrderSlot']['time_slot']['start_time']}} - 
+                            {{ $timeSlot['timeOrderSlot']['time_slot']['end_time']}}
+                        @endif
                     </p>
                 </span>
             </div>

@@ -19,14 +19,14 @@ class StandardController extends Controller
     /**
      * TimeSlotOrderRepository object
      *
-     * @var array
+     * @var object
      */
     protected $timeSlotOrderRepository;
 
     /**
      * Ipn object
      *
-     * @var array
+     * @var object
      */
     protected $ipnHelper;
 

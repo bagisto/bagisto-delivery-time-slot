@@ -107,6 +107,7 @@ class SellerTimeSlotController extends Controller
         $data = $this->timeSlotsRepository->findWhere([
             'is_seller' => 1,
             'status' => 1,
+            'visibility' => 1,
             'marketplace_seller_id' => $seller->id
             ]);
 
@@ -117,6 +118,7 @@ class SellerTimeSlotController extends Controller
             $sellerData = $this->timeSlotsRepository->findWhere([
                 'is_seller' => 1,
                 'status' => 1,
+                'visibility' => 1,
                 'marketplace_seller_id' => $seller->id
                 ])->last();
             $minimuTimeRequired = $sellerData;

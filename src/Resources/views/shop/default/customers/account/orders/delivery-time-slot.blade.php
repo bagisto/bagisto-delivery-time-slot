@@ -20,22 +20,21 @@
                     $timeSlot_order_item_id = $timeSlotItem->id;
                 }
             @endphp
-
+                
             @if ( $timeSlot_order_item_id == $item_id && ! is_null($timeSlot['timeOrderSlot']))
             
-                <div class="order-status">
-                    <span>
-                        <p><strong>Delivery Date/Day: </strong>
+            <div class="order-status">
+                <span>
+                    <p><strong>Delivery Date/Day: </strong>
                         {{ $timeSlot['timeOrderSlot']['delivery_date'] }}
-                        </p>
-                        <p><strong>Delivery Time: </strong>
-                            {{ $timeSlot['timeOrderSlot']['time_slot']['start_time']}}<b>
-                                -
-                            </b>
-                            {{ $timeSlot['timeOrderSlot']['time_slot']['end_time']}}
-                        </p>
-                    </span>
-                </div>
+                    </p>
+                    <p><strong>Delivery Time: </strong>
+                        {{ $timeSlot['timeOrderSlot']['time_slot']['start_time'] }}
+                        <b> - </b>
+                        {{ $timeSlot['timeOrderSlot']['time_slot']['end_time'] }}
+                    </p>
+                </span>
+            </div>
             @endif
         @endforeach
     @endforeach

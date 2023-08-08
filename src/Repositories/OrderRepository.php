@@ -2,12 +2,12 @@
 
 namespace Webkul\DeliveryTimeSlot\Repositories;
 
-use Illuminate\Container\Container as App;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
-use Webkul\Core\Eloquent\Repository;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Container\Container as App;
 use Webkul\Sales\Contracts\Order;
+use Webkul\Core\Eloquent\Repository;
 use Webkul\Sales\Generators\OrderSequencer;
 use Webkul\Sales\Repositories\OrderItemRepository;
 use Webkul\Sales\Repositories\DownloadableLinkPurchasedRepository;
@@ -82,14 +82,20 @@ class OrderRepository extends Repository
         try {
             Event::dispatch('checkout.order.save.before', [$data]);
 
-            if (isset($data['customer']) && $data['customer']) {
+            if (
+                isset($data['customer']) &&
+                $data['customer']
+            ) {
                 $data['customer_id'] = $data['customer']->id;
                 $data['customer_type'] = get_class($data['customer']);
             } else {
                 unset($data['customer']);
             }
 
-            if (isset($data['channel']) && $data['channel']) {
+            if (
+                isset($data['channel']) &&
+                $data['channel']
+            ) {
                 $data['channel_id'] = $data['channel']->id;
                 $data['channel_type'] = get_class($data['channel']);
                 $data['channel_name'] = $data['channel']->name;
@@ -102,7 +108,7 @@ class OrderRepository extends Repository
             $order = $this->model->create(array_merge($data, ['increment_id' => $this->generateIncrementId()]));
 
             // Delivery Time Slot Start
-            if ( core()->getConfigData('delivery_time_slot.settings.general.status') ) {
+            if (core()->getConfigData('delivery_time_slot.settings.general.status')) {
                 $this->createDeliveryTimeSlotOrder($order);
             }// Delivery Time Slot End
 
@@ -119,7 +125,10 @@ class OrderRepository extends Repository
 
                 $orderItem = $this->orderItemRepository->create(array_merge($item, ['order_id' => $order->id]));
 
-                if (isset($item['children']) && $item['children']) {
+                if (
+                    isset($item['children']) &&
+                    $item['children']
+                ) {
                     foreach ($item['children'] as $child) {
                         $this->orderItemRepository->create(array_merge($child, ['order_id' => $order->id, 'parent_id' => $orderItem->id]));
                     }
@@ -182,15 +191,21 @@ class OrderRepository extends Repository
      */
     public function createDeliveryTimeSlotOrder($order)
     {
-        if (! isset($timeSlot['selected_delivery_slot']) ) {
+        if (! isset($timeSlot['selected_delivery_slot'])) {
             $timeSlot = session()->get('selected_delivery_slot');
         }
 
-        if ( $order && isset($timeSlot) && $timeSlot ) {
-
+        if (
+            $order &&
+            isset($timeSlot) &&
+            $timeSlot
+        ) {
             foreach ($timeSlot as $key => $slot) {
                 $sellerId = NULL;
-                if ( isset($slot[1]) && $slot[1]) {
+                if (
+                    isset($slot[1]) &&
+                    $slot[1]
+                ) {
                     $sellerId = (int) $slot[1];
                 }
                 

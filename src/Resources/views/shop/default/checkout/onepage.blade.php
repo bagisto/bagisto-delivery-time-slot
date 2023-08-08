@@ -55,8 +55,8 @@
                 </div>
 
                 <div class="step-content shipping" v-show="current_step == 2" id="shipping-section">
-                    <shipping-section v-if="current_step == 2" 
-                    @onShippingMethodSelected="shippingMethodSelected($event)" 
+                    <shipping-section v-if="current_step == 2"
+                    @onShippingMethodSelected="shippingMethodSelected($event)"
                     @onTimeSlotMethodSelected="timeSlotMethodSelected($event)"></shipping-section>
 
                     <div class="button-group">
@@ -257,7 +257,7 @@
                             if (! isValid)
                                 return;
 
-                            this_this.$http.post("{{ route('customer.checkout.exist') }}", {email: this_this.address.billing.email})
+                            this_this.$http.post("{{ route('shop.customer.checkout.exist') }}", {email: this_this.address.billing.email})
                                 .then(function(response) {
                                     this_this.is_customer_exist = response.data ? 1 : 0;
                                 })
@@ -269,7 +269,7 @@
                 loginCustomer: function() {
                     var this_this = this;
 
-                    this_this.$http.post("{{ route('customer.checkout.login') }}", {
+                    this_this.$http.post("{{ route('shop.customer.checkout.login') }}", {
                             email: this_this.address.billing.email,
                             password: this_this.address.billing.password
                         })
@@ -316,7 +316,7 @@
                     }
 
                     // Delivery Time Slot Start
-                    var shipping_save_route = "{{ route('shop.checkout.save-address') }}";
+                    var shipping_save_route = "{{ route('shop.checkout.save_address') }}";
                     if ( this.delivery_status == 1 ) {
                         var shipping_save_route = "{{ route('marketplace.timeslot.checkout.saveaddress') }}";
                     }
@@ -328,9 +328,9 @@
 
                             // Delivery Time Slot Start
                             if ( this_this.delivery_status == 1 ) {
-                                this_this.sellersTimeSlots = response.data.sellersTimeSlots;
-                                this_this.marketplaceSellers = response.data.marketplaceSellers;
-                                this_this.sellers = response.data.sellers;
+                                sellersTimeSlots = response.data.sellersTimeSlots;
+                                marketplaceSellers = response.data.marketplaceSellers;
+                                sellers = response.data.sellers;
                             }// Delivery Time Slot End
 
                             if (this_this.step_numbers[response.data.jump_to_section] == 2)
@@ -358,7 +358,7 @@
 
                     this.disable_button = true;
 
-                    this.$http.post("{{ route('shop.checkout.save-shipping') }}", {'shipping_method': this.selected_shipping_method})
+                    this.$http.post("{{ route('shop.checkout.save_shipping') }}", {'shipping_method': this.selected_shipping_method})
                         .then(function(response) {
                             this_this.disable_button = false;
 
@@ -381,9 +381,9 @@
                     var this_this = this;
 
                     this.disable_button = true;
-                        
+
                     // Delivery Time Slot Start
-                    var paymant_save_route = "{{ route('shop.checkout.save-payment') }}";
+                    var paymant_save_route = "{{ route('shop.checkout.save_payment') }}";
                     var params = {'payment': this.selected_payment_method};
                     if ( this.delivery_status == 1 ) {
                         paymant_save_route = "{{ route('marketplace.timeslot.checkout.save-payment') }}";
@@ -417,7 +417,7 @@
                     this.disable_button = true;
 
                     // Delivery Time Slot Start
-                    var order_place_route = "{{ route('shop.checkout.save-order') }}";
+                    var order_place_route = "{{ route('shop.checkout.save_order') }}";
                     var params = {'_token': "{{ csrf_token() }}"};
                     if ( this.delivery_status == 1 ) {
                         order_place_route = "{{ route('marketplace.timeslot.checkout.save-order') }}";
@@ -461,7 +461,7 @@
                 shippingMethodSelected: function(shippingMethod) {
                     this.selected_shipping_method = shippingMethod;
                 },
-                    
+
                 // Delivery Time Slot Start
                 timeSlotMethodSelected: function(timeSlotMethod) {
                     if ( this.delivery_status == 1 ) {
@@ -510,7 +510,7 @@
                     delivery_status: "{{ core()->getConfigData('delivery_time_slot.settings.general.status') }}",
 
                     delivery_time_slot_value: [],
-                    
+
                     clickedSlotsValue: [],
                     // Delivery Time Slot End
                 }
@@ -581,7 +581,7 @@
 
                         this.delivery_time_slot_value = data;
                     }
-                    
+
                     this.$emit('onTimeSlotMethodSelected', this.delivery_time_slot_value);
 
                     eventBus.$emit('after-shipping-method-selected', this.selected_shipping_method);
@@ -652,7 +652,7 @@
                     templateRender: null,
 
                     error_message: '',
-                    
+
                     delivery_time_slot_value: [],
                 }
             },
@@ -717,5 +717,5 @@
 @endpush
 
 @push('css')
-    <link rel="stylesheet" href="{{ bagisto_asset('css/delivery-time-slot.css') }}">
+<link rel="stylesheet" href="{{ asset('vendor/delivery-time-slot/assets/css/delivery-time-slot.css') }}">
 @endpush

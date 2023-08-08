@@ -86,11 +86,11 @@ class RefundController extends Controller
     {
         $order = $this->orderRepository->findOrFail($orderId);
 
-        if ( core()->getConfigData('delivery_time_slot.settings.general.status') ) {
+        if (core()->getConfigData('delivery_time_slot.settings.general.status')) {
             $deliveryTimeSlot = $this->deliveryTimeSlotsOrdersRepository->findOneByField('order_id', $orderId);
 
             $timeSlotData = [];
-            if ( $deliveryTimeSlot ) {
+            if ($deliveryTimeSlot) {
                 foreach ($order->items as $key => $item) {
                     if ($item->type == 'configurable') {
                         $item = $item->child;
@@ -101,7 +101,7 @@ class RefundController extends Controller
                         'customer_id'   => $order->customer_id
                     ]);
 
-                    if ( $deliveryTimeSlot ) {
+                    if ($deliveryTimeSlot) {
                         $this->orderSlots->push([
                             'items'         => [$item],
                             'timeOrderSlot' => $deliveryTimeSlot
@@ -130,11 +130,11 @@ class RefundController extends Controller
         $refund = $this->refundRepository->findOrFail($id);
         $orderId = $refund->order_id;
 
-        if ( core()->getConfigData('delivery_time_slot.settings.general.status') ) {
+        if (core()->getConfigData('delivery_time_slot.settings.general.status')) {
             $deliveryTimeSlot = $this->deliveryTimeSlotsOrdersRepository->findOneByField('order_id', $orderId);
 
             $timeSlotData = [];
-            if ( $deliveryTimeSlot ) {
+            if ($deliveryTimeSlot) {
                 foreach ($refund->items as $key => $item) {
                     if ($item->type == 'configurable') {
                         $item = $item->child;
@@ -144,7 +144,7 @@ class RefundController extends Controller
                         'order_id'      => $orderId
                     ]);
 
-                    if ( $deliveryTimeSlot ) {
+                    if ($deliveryTimeSlot) {
                         $this->orderSlots->push([
                             'items'         => [$item],
                             'timeOrderSlot' => $deliveryTimeSlot

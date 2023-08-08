@@ -1,6 +1,7 @@
 <div class="control-group mt-20">
     <div v-for="slots, sellerId in sellersTimeSlots" class="mt-20">
-        <div class="table">
+
+        <div class="table" v-if="! slots.slotsNotAvilable">
             <div class="seller-name mb-20" v-if="sellerId == 0 && ! slots.SlotsNotAvilable" >
                 <span>{{ __('delivery-time-slot::app.shop.checkout.seller')}}:</span>
                 <span>{{ __('delivery-time-slot::app.shop.checkout.admin')}}</span>
@@ -28,8 +29,8 @@
             <table class="radio-boxed">
                 <thead>
                     <tr>
-                        <th align= "center">Date/Day</th>
-                        <th colspan="2" align= "center" style="border-left: 1px solid white;">Delivery Time Slots</th>
+                        <th>Date/Day</th>
+                        <th colspan="2" style="border-left: 1px solid white;">Delivery Time Slots</th>
                     </tr>
                 </thead>
 
@@ -46,7 +47,7 @@
                             @{{ index }}
                         </td>
 
-                        <td class="timeslot-td" align="center">
+                        <td class="timeslot-td">
                             <span v-for="timeSlot, key in timeSlots">
                                 <span v-for="quota, quotaKey in slots.quotas" v-if="quotaKey == timeSlot.id && timeSlot.time_delivery_quota > quota && (Date.parse(['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][new Date().getDay()] + ', '+new Date().getDate() + ' ' + (['','January', 'February', 'March', 'April', 'May', 'June',
                                     'July', 'August', 'September', 'October', 'November', 'December'
@@ -78,5 +79,15 @@
                 </tbody>
             </table>
         </div>
+
+        @if (core()->getConfigData('delivery_time_slot.settings.general.show_message'))
+            <div class="row col-12" v-else>
+                <div style="border:1px solid red;width:100%;padding:15px">
+                    <p class="fs20" v-if="slots.message">@{{ slots.message }}</p>
+                    <p v-else> {{ core()->getConfigData('delivery_time_slot.settings.general.time_slot_error_message') ?: ' Warning: There are no slots avilable'}}</p>
+                </div>
+            </div>
+        @endif
+
     </div>
 </div>

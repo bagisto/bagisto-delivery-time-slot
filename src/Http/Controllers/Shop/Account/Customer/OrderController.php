@@ -49,10 +49,6 @@ class OrderController extends Controller
         DeliveryTimeSlotsOrdersRepository $deliveryTimeSlotsOrdersRepository
     )
     {
-        $this->middleware('customer');
-
-        $this->currentCustomer = auth()->guard('customer')->user();
-
         $this->orderRepository = $orderRepository;
 
         $this->invoiceRepository = $invoiceRepository;
@@ -72,44 +68,46 @@ class OrderController extends Controller
      */
     public function view($id)
     {
-        $order = $this->orderRepository->findOneWhere([
-            'customer_id' => $this->currentCustomer->id,
-            'id'          => $id,
-        ]);
-        
-        if (! $order) {
-            abort(404);
-        }
-
-        if ( core()->getConfigData('delivery_time_slot.settings.general.status') ) {
-            $deliveryTimeSlotsOrder = $this->deliveryTimeSlotsOrdersRepository->findOneByField('order_id', $id);
-
-            $timeSlotData = [];
-            if ( $deliveryTimeSlotsOrder ) {
-                foreach ($order->items as $key => $item) {
-                    if ($item->type == 'configurable') {
-                        $item = $item->child;
-                    }
-
-                    $deliveryTimeSlot = $this->deliveryTimeSlotsOrdersRepository->with('time_slot')->findOneWhere([
-                        'order_id'      => $id,
-                        'customer_id'   => $order->customer_id
-                    ]);
-
-                    if ( $deliveryTimeSlot ) {
-                        $this->orderSlots->push([
-                            'items'         => [$item],
-                            'timeOrderSlot' => $deliveryTimeSlot
-                        ]);
-                    }
-                }
-
-                $timeSlotData = $this->orderSlots;
+        if (auth()->guard('customer')->user()) {
+            $order = $this->orderRepository->findOneWhere([
+                'customer_id' => auth()->guard('customer')->user()->id,
+                'id'          => $id,
+            ]);
+            
+            if (! $order) {
+                abort(404);
             }
-
-            return view($this->_config['view'], compact('order', 'timeSlotData'));
-        } else {
-            return view($this->_config['view'], compact('order'));
+    
+            if (core()->getConfigData('delivery_time_slot.settings.general.status')) {
+                $deliveryTimeSlotsOrder = $this->deliveryTimeSlotsOrdersRepository->findOneByField('order_id', $id);
+    
+                $timeSlotData = [];
+                if ($deliveryTimeSlotsOrder) {
+                    foreach ($order->items as $key => $item) {
+                        if ($item->type == 'configurable') {
+                            $item = $item->child;
+                        }
+    
+                        $deliveryTimeSlot = $this->deliveryTimeSlotsOrdersRepository->with('time_slot')->findOneWhere([
+                            'order_id'      => $id,
+                            'customer_id'   => $order->customer_id
+                        ]);
+    
+                        if ($deliveryTimeSlot) {
+                            $this->orderSlots->push([
+                                'items'         => [$item],
+                                'timeOrderSlot' => $deliveryTimeSlot
+                            ]);
+                        }
+                    }
+    
+                    $timeSlotData = $this->orderSlots;
+                }
+    
+                return view($this->_config['view'], compact('order', 'timeSlotData'));
+            } else {
+                return view($this->_config['view'], compact('order'));
+            }
         }
     }
 }

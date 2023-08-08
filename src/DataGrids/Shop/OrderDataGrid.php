@@ -58,6 +58,13 @@ class OrderDataGrid extends DataGrid
             'searchable' => true,
             'sortable'   => true,
             'filterable' => true,
+            'wrapper' => function ($data) {
+                if (core()->getConfigData('delivery_time_slot.settings.general.display_time_format') == 12) {
+                    return date('Y-m-d h:i:s A', strtotime($data->created_at));
+                }
+
+                return $data->created_at;
+            }
         ]);
 
         $this->addColumn([
@@ -91,7 +98,7 @@ class OrderDataGrid extends DataGrid
                     return '<span class="badge badge-md badge-warning">' . trans('shop::app.customer.account.order.index.pending') . '</span>';
                 } elseif ($value->status == "pending_payment") {
                     return '<span class="badge badge-md badge-warning">' . trans('shop::app.customer.account.order.index.pending-payment') . '</span>';
-                } elseif ($value->status == "fraud") {
+                } elseif ($value->status == "fraud") {                    
                     return '<span class="badge badge-md badge-danger">' . trans('shop::app.customer.account.order.index.fraud') . '</span>';
                 }
             },

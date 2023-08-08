@@ -13,8 +13,10 @@
         </div>
 
         <div class="page-content">
-            @inject('orderGrid', 'Webkul\DeliveryTimeSlot\DataGrids\Admin\DeliveyOrdersDataGrid')
-            {!! $orderGrid->render() !!}
+            <datagrid-plus 
+                src="{{ route('admin.timeslot.delivery.orders') }}"
+            >
+            </datagrid-plus>
         </div>
     </div>
 @endsection

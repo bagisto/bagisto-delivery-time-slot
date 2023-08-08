@@ -96,7 +96,7 @@
                     @endphp
 
                     <div class="row col-12 no-padding">
-                        <div class="col-2 max-sm-img-dimention">
+                        <div class="col-2 max-sm-img-dimension">
                             <img src="{{ $productBaseImage['medium_image_url'] }}" alt="" />
                         </div>
 
@@ -104,25 +104,25 @@
 
                             {!! view_render_event('bagisto.shop.checkout.name.before', ['item' => $item]) !!}
 
-                                <div class="row fs20">
-                                    <span class="col-12 link-color fw6">{{ $item->product->name }}</span>
-                                </div>
+                            <div class="row fs20">
+                                <span class="col-12 link-color fw6">{{ $item->product->name }}</span>
+                            </div>
 
                             {!! view_render_event('bagisto.shop.checkout.name.after', ['item' => $item]) !!}
 
                             <div class="row col-12">
                                 {!! view_render_event('bagisto.shop.checkout.price.before', ['item' => $item]) !!}
-                                        <span class="value">
-                                            {{ core()->currency($item->base_price) }}
-                                        </span>
+                                <span class="value">
+                                    {{ core()->currency($item->base_price) }}
+                                </span>
                                 {!! view_render_event('bagisto.shop.checkout.price.after', ['item' => $item]) !!}
 
                                 <i class="rango-close text-down-4"></i>
 
                                 {!! view_render_event('bagisto.shop.checkout.quantity.before', ['item' => $item]) !!}
-                                    <span class="value">
-                                        {{ $item->quantity }} ({{ __('shop::app.checkout.onepage.quantity') }})
-                                    </span>
+                                <span class="value">
+                                    {{ $item->quantity }} ({{ __('shop::app.checkout.onepage.quantity') }})
+                                </span>
                                 {!! view_render_event('bagisto.shop.checkout.quantity.after', ['item' => $item]) !!}
                             </div>
 
@@ -132,15 +132,16 @@
 
                             {!! view_render_event('bagisto.shop.checkout.options.before', ['item' => $item]) !!}
 
-                                @if (isset($item->additional['attributes']))
-                                    <div class="item-options">
+                            @if (isset($item->additional['attributes']))
+                                <div class="item-options">
 
-                                        @foreach ($item->additional['attributes'] as $attribute)
-                                            <b>{{ $attribute['attribute_name'] }} : </b>{{ $attribute['option_label'] }}</br>
-                                        @endforeach
+                                    @foreach ($item->additional['attributes'] as $attribute)
+                                        <b>{{ $attribute['attribute_name'] }} :
+                                        </b>{{ $attribute['option_label'] }}</br>
+                                    @endforeach
 
-                                    </div>
-                                @endif
+                                </div>
+                            @endif
 
                             {!! view_render_event('bagisto.shop.checkout.options.after', ['item' => $item]) !!}
                         </div>

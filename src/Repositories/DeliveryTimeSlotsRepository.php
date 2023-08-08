@@ -48,7 +48,7 @@ class DeliveryTimeSlotsRepository extends Repository
         $timestamp = strtotime('next Sunday');
         $days = array();
         for ($i = 0; $i < 7; $i++) {
-            $days[] = strftime('%A', $timestamp);
+            $days[] = date('l', $timestamp);
             $timestamp = strtotime('+1 day', $timestamp);
         }
 
@@ -63,39 +63,51 @@ class DeliveryTimeSlotsRepository extends Repository
     {
         $this->timeSlotsRepository = app('Webkul\DeliveryTimeSlot\Repositories\DeliveryTimeSlotsRepository');
         $adminAllowesDays = explode(',', core()->getConfigData('delivery_time_slot.settings.general.allowed_days'));
-        
+
         $adminSlots = $this->timeSlotsRepository->findWhere([
             'status'    => 1,
+            'visibility'    => 1,
             'is_seller' => 0,
             ['start_time', '<>', NULL],
             ['end_time', '<>', NULL],
-        ])->toArray();
+        ]);
+
+        if (core()->getConfigData('delivery_time_slot.settings.general.display_time_format') == 12) {
+            foreach ($adminSlots as &$slot) {
+                $slot['start_time'] = date('h:i A', strtotime($slot['start_time']));
+                $slot['end_time'] = date('h:i A', strtotime($slot['end_time']));
+            }
+        }
 
         // Defined days
         $dateAndDays = $this->getDateWithDays();
         $timestamp = strtotime('next Monday');
-        
+
         $days = [];
         for ($i = 0; $i < 7; $i++) {
-            $days[] = strftime('%A', $timestamp);
+            $days[] = date('l', $timestamp);
             $timestamp = strtotime('+1 day', $timestamp);
         }
 
         $minimumRequiredTime = $this->timeSlotsRepository->findWhere([
             'is_seller' => 0,
-            'status'    => 1
+            'status'    => 1,
+            'visibility'    => 1,
         ])->last();
-        
+
         $sellersTimeSlots = [];
         foreach ($adminSlots as $adminSlot) {
             $delivery_day = ucfirst($adminSlot['delivery_day']);
-            
-            if ( in_array($delivery_day, $days) && isset($dateAndDays[$delivery_day]) ) {
+
+            if (
+                in_array($delivery_day, $days) &&
+                isset($dateAndDays[$delivery_day])
+            ) {
                 $oldDateTimestamp = strtotime($dateAndDays[$delivery_day]);
                 $finalTimeStamp = date('j F, l, Y', $oldDateTimestamp);
 
                 $addedDays = $minimumRequiredTime->minimum_time_required;
-                
+
                 $orderProcessDate = date('j F, l, Y', strtotime(date('Y-m-d') . '+' . $addedDays . 'days'));
 
                 //Delivery quotas
@@ -103,9 +115,9 @@ class DeliveryTimeSlotsRepository extends Repository
                     'time_slot_id' => $adminSlot['id'],
                 ])->count();
 
-                if ( strtotime($finalTimeStamp) >= strtotime($orderProcessDate) ) {
+                if (strtotime($finalTimeStamp) >= strtotime($orderProcessDate)) {
                     $quotas[$adminSlot['id']] = $deliveryQuotasCount;
-                
+
                     $sellersTimeSlots[0]['seller']  = 'Admin';
                     $sellersTimeSlots[0]['message'] = core()->getConfigData('delivery_time_slot.settings.general.time_slot_error_message') ?: ' Warning: There are no slots avilable';
                     $sellersTimeSlots[0]['slotsNotAvilable']    = true;
@@ -114,11 +126,14 @@ class DeliveryTimeSlotsRepository extends Repository
                 }
             }
         }
-        
+
         // Admin set days for delivery
         $timeSlots = [];
         foreach ($sellersTimeSlots as $key => $allTimeSlots) {
-            if ( isset($sellersTimeSlots[$key]['days']) && $sellersTimeSlots[$key]['days'] ) {
+            if (
+                isset($sellersTimeSlots[$key]['days']) &&
+                $sellersTimeSlots[$key]['days']
+            ) {
                 $timeSlots[$key] = [
                     'seller'            => $allTimeSlots['seller'],
                     'quotas'            => $allTimeSlots['quotas'],
@@ -130,7 +145,10 @@ class DeliveryTimeSlotsRepository extends Repository
                     $daysArray = explode(',', $date);
                     $slotOnlyDay = trim($daysArray[1]);
 
-                    if (! empty($adminAllowesDays) && in_array(strtoLower($slotOnlyDay), $adminAllowesDays) ) {
+                    if (
+                        ! empty($adminAllowesDays) &&
+                        in_array(strtoLower($slotOnlyDay), $adminAllowesDays)
+                    ) {
                         $timeSlots[$key]['days'][$date] = $filterDay;
                     }
                 }
@@ -144,18 +162,41 @@ class DeliveryTimeSlotsRepository extends Repository
 
         $dateArray = [];
         foreach($timeSlots as $k => $timeSlot) {
-            if (! $timeSlot['slotsNotAvilable']) {
+            if ($timeSlot['slotsNotAvilable']) {
                 foreach ($timeSlot['days'] as $key => $finalDays) {
                     $dateArray[] = $key;
                 }
             }
 
-            $filteredDates =  array_reverse($dateArray);
+            $filteredDates = [];
 
-            if (! $timeSlot['slotsNotAvilable']) {
-                if ( count($timeSlot['days']) > $totalDaysCountByAdmin ) {
+            foreach($dateArray as $date) {
+                $filteredDates[] = strtotime($date);
+            }
+
+            for($j = 0; $j < count($filteredDates); $j ++) {
+                for($i = 0; $i < count($filteredDates)-1; $i ++){
+            
+                    if($filteredDates[$i] > $filteredDates[$i+1]) {
+                        $temp = $filteredDates[$i+1];
+                        $filteredDates[$i+1]=$filteredDates[$i];
+                        $filteredDates[$i]=$temp;
+                    }       
+                }
+            }
+
+            $newFilteredDates = [];
+
+            foreach($filteredDates as $filteredDate) {
+                $newFilteredDates[] = date('j F, l, Y', $filteredDate);;
+            }
+
+            $filteredDates = array_reverse($newFilteredDates);
+
+            if ($timeSlot['slotsNotAvilable']) {
+                if (count($timeSlot['days']) > $totalDaysCountByAdmin) {
                     $noOfDays = count($timeSlot['days']) - $totalDaysCountByAdmin;
-                    
+
                     for ($i = 0; $i < $noOfDays; $i++) {
                         unset($filteredDates[$i]);
                     }
@@ -171,10 +212,10 @@ class DeliveryTimeSlotsRepository extends Repository
         //prepare Slots for user's end
         $finalTimeSlots = [];
         foreach ($timeSlots as $k => $filteredValue) {
-            if (! $filteredValue['slotsNotAvilable']) {
-                
+            if ($filteredValue['slotsNotAvilable']) {
+
                 foreach ($filteredValue['days'] as $days => $finaValue) {
-                    if ( in_array($days, $filteredDays)) {
+                    if (in_array($days, $filteredDays[$k])) {
                         $finalTimeSlots[$k]['days'][$days] = $finaValue;
                         $finalTimeSlots[$k]['seller'] = $filteredValue['seller'];
                         $finalTimeSlots[$k]['quotas'] = $filteredValue['quotas'];
@@ -185,11 +226,20 @@ class DeliveryTimeSlotsRepository extends Repository
                 $finalTimeSlots[$k] = $filteredValue;
             }
         }
-        
-        if ( $finalTimeSlots == null ) {
+
+        if ($finalTimeSlots == null) {
+
             $finalTimeSlots[0]['seller'] = 'Admin';
             $finalTimeSlots[0]['slotsNotAvilable'] = true;
             $finalTimeSlots[0]['message'] = core()->getConfigData('delivery_time_slot.settings.general.time_slot_error_message') ?: ' Warning: There are no slots avilable';
+
+        } elseif (
+            isset($finalTimeSlots[0]['days']) &&
+            count($finalTimeSlots[0]['days']) < 1
+        ) {
+            $finalTimeSlots[0]['slotsNotAvilable'] = true;
+        } else {
+            $finalTimeSlots[0]['slotsNotAvilable'] = false;
         }
 
         return $finalTimeSlots;
@@ -203,7 +253,7 @@ class DeliveryTimeSlotsRepository extends Repository
             new \DateInterval('P1D'), // Define the intervals as Periods of 1 Day
             6 // Apply the interval 6 times on top of the starting date
         );
-        
+
         foreach ($period as $day) {
             $dateAndDays[$day->format('l')] = $day->format('d F,Y');
         }
