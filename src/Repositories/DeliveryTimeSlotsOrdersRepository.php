@@ -4,7 +4,6 @@ namespace Webkul\DeliveryTimeSlot\Repositories;
 
 use Webkul\Core\Eloquent\Repository;
 
-
 class DeliveryTimeSlotsOrdersRepository extends Repository
 {
     /**

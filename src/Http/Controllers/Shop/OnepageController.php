@@ -2,7 +2,6 @@
 
 namespace Webkul\DeliveryTimeSlot\Http\Controllers\Shop;
 
-use Illuminate\Support\Facades\Event;
 use Webkul\Shop\Http\Controllers\Controller;
 use Webkul\Checkout\Facades\Cart;
 use Webkul\Shipping\Facades\Shipping;
@@ -10,7 +9,6 @@ use Webkul\Payment\Facades\Payment;
 use Webkul\Checkout\Http\Requests\CustomerAddressForm;
 use Webkul\Sales\Repositories\OrderRepository;
 use Webkul\Customer\Repositories\CustomerRepository;
-
 use Webkul\DeliveryTimeSlot\Repositories\DeliveryTimeSlotsRepository;
 use Webkul\DeliveryTimeSlot\Repositories\DeliveryTimeSlotsOrdersRepository;
 use Webkul\DeliveryTimeSlot\Repositories\OrderRepository as DeliveryTimeSlotOrderRepository;
@@ -93,12 +91,12 @@ class OnepageController extends Controller
 
         if ( core()->getConfigData('delivery_time_slot.settings.general.status') ) {
             $this->dtsConfigArray['status'] = core()->getConfigData('delivery_time_slot.settings.general.status');
-            
+
             $this->dtsConfigArray['message'] = core()->getConfigData('delivery_time_slot.settings.general.time_slot_error_message');
 
             $this->dtsConfigArray['days'] =  core()->getConfigData('delivery_time_slot.settings.general.allowed_days');
         }
-        
+
         parent::__construct();
     }
 
@@ -112,14 +110,20 @@ class OnepageController extends Controller
     {
         $data = request()->all();
 
-        if (! auth()->guard('customer')->check() && ! Cart::getCart()->hasGuestCheckoutItems()) {
+        if (
+            ! auth()->guard('customer')->check() &&
+            ! Cart::getCart()->hasGuestCheckoutItems()
+        ) {
             return response()->json(['redirect_url' => route('customer.session.index')], 403);
         }
 
         $data['billing']['address1'] = implode(PHP_EOL, array_filter($data['billing']['address1']));
         $data['shipping']['address1'] = implode(PHP_EOL, array_filter($data['shipping']['address1']));
 
-        if (Cart::hasError() || ! Cart::saveCustomerAddress($data)) {
+        if (
+            Cart::hasError() ||
+            ! Cart::saveCustomerAddress($data)
+        ) {
             return response()->json(['redirect_url' => route('shop.checkout.cart.index')], 403);
         } else {
             $cart = Cart::getCart();
@@ -134,7 +138,7 @@ class OnepageController extends Controller
                     if ( $this->dtsConfigArray['status'] ) {
                         $rates['sellersTimeSlots'] = $this->deliveryTimeSlotsRepository->getShippingTimeSlots();
                     } // Delivery Time Slot End
-                    
+
                     return response()->json($rates);
                 }
             } else {
@@ -152,7 +156,11 @@ class OnepageController extends Controller
     {
         $payment = request()->get('payment');
 
-        if (Cart::hasError() || ! $payment || ! Cart::savePaymentMethod($payment)) {
+        if (
+            Cart::hasError() ||
+            ! $payment ||
+            ! Cart::savePaymentMethod($payment)
+        ) {
             return response()->json(['redirect_url' => route('shop.checkout.cart.index')], 403);
         }
 
@@ -161,27 +169,36 @@ class OnepageController extends Controller
         $cart = Cart::getCart();
 
         // Delivery Time Slot Start
-        if ( $this->dtsConfigArray['status'] ) {
+        if ($this->dtsConfigArray['status']) {
             $selectedSlots = [];
             $selectedTimeSlot = request()->get('selected_delivery_slot');
-            
-            if ( isset($selectedTimeSlot) && $selectedTimeSlot ) {
+
+            if (
+                isset($selectedTimeSlot) &&
+                $selectedTimeSlot
+            ) {
                 foreach ($selectedTimeSlot as $key => $slot) {
-                    
+
                     $sellerId = NULL;
-                    if (isset($slot[1]) && $slot[1]) {
+                    if (
+                        isset($slot[1]) &&
+                        $slot[1]
+                    ) {
                         $sellerId = (int) $slot[1];
                     }
-    
+
                     $deliveryTimeSlot = $this->deliveryTimeSlotsRepository->find($slot[0]);
-    
-                    if ( isset($deliveryTimeSlot->id) && $deliveryTimeSlot->id == $slot[0]) {
+
+                    if (
+                        isset($deliveryTimeSlot->id) &&
+                        $deliveryTimeSlot->id == $slot[0]
+                    ) {
                         $selectedSlots[0]['days'] = $deliveryTimeSlot;
                         $selectedSlots[0]['delivery_date'] = $slot[2] . ',' . $slot['3'] . ',' . $slot[4];
                     }
                 }
             }
-    
+
             session()->put('selected_delivery_slot', request()->selected_delivery_slot);
 
             return response()->json([
@@ -222,7 +239,7 @@ class OnepageController extends Controller
         }
 
         // Delivery Time Slot Start
-        if ( $this->dtsConfigArray['status'] ) {
+        if ($this->dtsConfigArray['status']) {
             $order = $this->deliveryTimeSlotOrderRepository->create(Cart::prepareDataForOrder());
         } else { // Delivery Time Slot End
             $order = $this->orderRepository->create(Cart::prepareDataForOrder());
@@ -254,7 +271,10 @@ class OnepageController extends Controller
             throw new \Exception(trans('shop::app.checkout.cart.minimum-order-message', ['amount' => core()->currency($minimumOrderAmount)]));
         }
 
-        if ($cart->haveStockableItems() && ! $cart->shipping_address) {
+        if (
+            $cart->haveStockableItems() &&
+            ! $cart->shipping_address
+        ) {
             throw new \Exception(trans('Please check shipping address.'));
         }
 
@@ -262,7 +282,10 @@ class OnepageController extends Controller
             throw new \Exception(trans('Please check billing address.'));
         }
 
-        if ($cart->haveStockableItems() && ! $cart->selected_shipping_rate) {
+        if (
+            $cart->haveStockableItems() && 
+            ! $cart->selected_shipping_rate
+        ) {
             throw new \Exception(trans('Please specify shipping method.'));
         }
 

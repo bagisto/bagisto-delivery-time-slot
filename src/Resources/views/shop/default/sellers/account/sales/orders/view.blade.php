@@ -6,7 +6,7 @@
 
 @section('content')
 @push('css')
-    <link rel="stylesheet" href="{{ bagisto_asset('css/mp-delivery-time-slot.css') }}">
+<link rel="stylesheet" href="{{ asset('vendor/delivery-time-slot/assets/css/delivery-time-slot.css') }}">
 @endpush
 
     <div class="account-layout">

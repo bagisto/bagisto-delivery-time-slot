@@ -5,12 +5,14 @@
 @stop
 
 @section('content')
-<style>
-    td {
-        border-spacing: 10px;
-        border-collapse: separate;
-    }
-</style>
+
+@push('css')
+    <style>
+        th:first-child, td:first-child {
+            min-width: 120px !important;
+        }
+    </style>
+@endpush
 
 <div class="content">
     <div class="page-content">
@@ -40,86 +42,95 @@
             <div class="horizontal-rule"></div>
             @csrf()
             <br>
-            <div class="sale-section" style="width:100%;">
-                <div class="control-group" style="width:100%;" :class="[errors.has('minimum_time_required') ? 'has-error' : '']">
+            <div class="sale-section">
+                <div class="control-group" :class="[errors.has('minimum_time_required') ? 'has-error' : '']">
                     <label for="minimum_time_required" class="required">{{ __('delivery-time-slot::app.shop.seller.minimum-required-time') }}</label>
 
-                    <input type="text" class="control" name="minimum_time_required" v-validate="'required'" value="{{ $minimuTimeRequired->minimum_time_required ?? 1 }}" data-vv-as="&quot;{{ __('delivery-time-slot::app.shop.seller.minimum-required-time') }}&quot;">
+                    <input type="number" class="control" name="minimum_time_required" v-validate="'required|between:1,7'" value="{{ $minimuTimeRequired->minimum_time_required ?? 1 }}" data-vv-as="&quot;{{ __('delivery-time-slot::app.shop.seller.minimum-required-time') }}&quot;">
 
                     <span class="control-error" v-if="errors.has('minimum_time_required')">@{{ errors.first('minimum_time_required') }}</span>
 
                     <span class="control-info" >Enter number of days, e.g: 5</span>
                 </div>
 
-                <table class="table mt-15" v-for="input, index in inputs" v-if="input.start_time || input.end_time != null">
+                <div class="table-responsive">
+                    <table class="table mt-15">
+                        <tbody v-for="input, index in inputs" v-if="input.start_time || input.end_time != null">
+                            <tr>
+                                <th class="required">{{ __('delivery-time-slot::app.admin.layouts.select-day') }}</th>
+                                <th>{{ __('delivery-time-slot::app.admin.layouts.start-time') }}</th>
+                                <th>{{ __('delivery-time-slot::app.admin.layouts.end-time') }}</th>
+                                <th>{{ __('delivery-time-slot::app.admin.layouts.quotas') }}</th>
+                                <th>{{ __('admin::app.status') }}</th>
+                            </tr>
+                            <tr>
+                                <input type="hidden" name="id[]" v-model="input.id" />
+                                <td>
+                                    <div class="control-group">
+                                        <select class="control" name="delivery_day[]">
+                                            @php
+                                                $adminDefinedDays =  core()->getConfigData('delivery_time_slot.settings.general.allowed_days');
+                                            @endphp
 
-                    <thead>
-                        <tr>
-                            <th class="required">{{ __('delivery-time-slot::app.admin.layouts.select-day') }}</th>
-                            <th>{{ __('delivery-time-slot::app.admin.layouts.start-time') }}</th>
-                            <th>{{ __('delivery-time-slot::app.admin.layouts.end-time') }}</th>
-                            <th>{{ __('delivery-time-slot::app.admin.layouts.quotas') }}</th>
-                        </tr>
-                    </thead>
+                                            @php($lang = Lang::get('delivery-time-slot::app.admin.layouts.days'))
+                                                @foreach($lang as $languageFile)
+                                                    <option
+                                                    v-if="input.delivery_day == '{{ strtolower($languageFile) }}'" selected value="{{strtolower($languageFile) }}">
+                                                        {{ $languageFile }}
+                                                    </option>
 
-                    <tbody>
-                        <tr>
-                            <input type="hidden" name="id[]" v-model="input.id" />
-                            <td>
-                                <div class="control-group">
-                                    <select class="control" name="delivery_day[]">
-                                        @php
-                                            $adminDefinedDays =  core()->getConfigData('delivery_time_slot.settings.general.allowed_days');
-                                        @endphp
-
-                                        @php($lang = Lang::get('delivery-time-slot::app.admin.layouts.days'))
-                                            @foreach($lang as $languageFile)
-                                                <option
-                                                v-if="input.delivery_day == '{{ strtolower($languageFile) }}'" selected value="{{strtolower($languageFile) }}">
-                                                    {{ $languageFile }}
-                                                </option>
-
-                                                <option value="{{strtolower($languageFile) }}" v-if="input.delivery_day != '{{ strtolower($languageFile) }}'">
-                                                    {{ $languageFile }}
-                                                </option>
-                                            @endforeach
-                                    </select>
-                                </div>
-                            </td>
-
-                            <td>
-                                <time-component>
-                                    <div class="control-group" :class="[inputs[index].start_time_execption ? 'has-error' : '']">
-                                        <input type="text" name="start_time[]" class="control" v-model="input.start_time" v-bind:value="input.start_time" @change="validateStartTime(input.end_time, $event, index)" v-validate="validate[inputs[index].start_time_execption] || is_required ? 'required' : ''"/>
-
-                                        <span class="control-error" v-if="inputs[index].start_time_execption">Start Time should be less Than End Time</span>
+                                                    <option value="{{strtolower($languageFile) }}" v-if="input.delivery_day != '{{ strtolower($languageFile) }}'">
+                                                        {{ $languageFile }}
+                                                    </option>
+                                                @endforeach
+                                        </select>
                                     </div>
-                                </time-component>
-                            </td>
+                                </td>
 
-                            <td>
-                                <time-component>
-                                    <div class="control-group" :class="[inputs[index].end_time_execption ? 'has-error' : '']" >
-                                        <input type="text" class="control"  name="end_time[]" v-model="input.end_time" @change="validateEndTime(input.start_time, $event, index)" v-validate="'required'"/>
+                                <td>
+                                    <time-component>
+                                        <div class="control-group" :class="[inputs[index].start_time_execption ? 'has-error' : '']">
+                                            <input type="text" name="start_time[]" class="control" v-model="input.start_time" v-bind:value="input.start_time" @change="validateStartTime(input.end_time, $event, index)" v-validate="validate[inputs[index].start_time_execption] || is_required ? 'required' : ''"/>
 
-                                        <span class="control-error" v-if="inputs[index].end_time_execption">End Time should be greater Than Start Time</span>
+                                            <span class="control-error" v-if="inputs[index].start_time_execption">Start Time should be less Than End Time</span>
+                                        </div>
+                                    </time-component>
+                                </td>
 
+                                <td>
+                                    <time-component>
+                                        <div class="control-group" :class="[inputs[index].end_time_execption ? 'has-error' : '']" >
+                                            <input type="text" class="control"  name="end_time[]" v-model="input.end_time" @change="validateEndTime(input.start_time, $event, index)" v-validate="'required'"/>
+
+                                            <span class="control-error" v-if="inputs[index].end_time_execption">End Time should be greater Than Start Time</span>
+
+                                        </div>
+                                    </time-component>
+
+                                <td>
+                                    <div class="control-group" >
+                                        <input type="number" value='InsertedValue.time_delivery_quota' class="control" name="time_delivery_quota[]" v-model="input.time_delivery_quota"/>
                                     </div>
-                                </time-component>
+                                </td>
 
-                            <td>
-                                <div class="control-group" >
-                                    <input type="text" value='InsertedValue.time_delivery_quota' class="control" name="time_delivery_quota[]" v-model="input.time_delivery_quota"/>
-                                </div>
-                            </td>
-                            <td>
-                                <a class="btn btn-md btn-primary button-remove" @click="removeInput(index)">
-                                    {{ __('delivery-time-slot::app.admin.layouts.btn.delete') }}
-                                </a>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                                <td>
+                                    <div class="control-group" >
+                                        <select class="control" name="visibility[]">
+                                            <option value="1" :selected="input.visibility === 1">{{ __('admin::app.true') }}</option>
+                                            <option value="0" :selected="input.visibility === 0">{{ __('admin::app.false') }}</option>
+                                        </select>                                        
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <a class="btn btn-md btn-primary button-remove" @click="removeInput(index)">
+                                        {{ __('delivery-time-slot::app.admin.layouts.btn.delete') }}
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
                 <a class="mt-10 btn btn-md btn-primary button-add" @click="addInput">
                     {{ __('delivery-time-slot::app.admin.layouts.btn.add-time-slot') }}
@@ -152,6 +163,7 @@
                         start_time : "",
                         end_time : "",
                         time_delivery_quota : "",
+                        visibility : "",
                         is_seller : 0,
                     }],
                 }
@@ -165,6 +177,7 @@
                         start_time : this.data[i].start_time,
                         end_time : this.data[i].end_time,
                         time_delivery_quota : this.data[i].time_delivery_quota,
+                        visibility : this.data[i].visibility,
                         is_seller: 0
                      });
                 }
@@ -177,13 +190,14 @@
             methods: {
 
                 addInput() {
-                    console.log(this.inputs);
+
                     this.inputs.push({
                         id: '',
                         delivery_day : '',
                         start_time: '',
                         end_time: '',
                         time_delivery_quota: '',
+                        visibility: '',
                         is_seller: 0,
                         is_required: false,
                         validate: {
@@ -193,7 +207,9 @@
                 },
 
                 removeInput(index) {
-                    this.$delete(this.inputs, index);
+                    if (confirm(`{{ __('delivery-time-slot::app.admin.layouts.delete-confirm') }}`)) {
+                        this.$delete(this.inputs, index);
+                    }
                 },
 
                 validateEndTime(start_time, event, index, endTime, setEndTime) {
@@ -260,16 +276,22 @@
                 },
 
                 onSubmit: function (e) {
-                    this.$validator.validateAll().then(result => {
-                        for (var i = 0; i < this.inputs.length; i++) {
 
-                            var startTime = this.inputs[i].start_time_execption;
-                            var endTime = this.inputs[i].end_time_execption;
-                            if (startTime === true || endTime === true) {
-                                return e.preventDefault();
+                    this.$validator.validateAll().then(result => {
+                        if (result) {
+                            for (var i = 0; i < this.inputs.length; i++) {
+
+                                var startTime = this.inputs[i].start_time_execption;
+                                var endTime = this.inputs[i].end_time_execption;
+                                if (startTime === true || endTime === true) {
+                                    return e.preventDefault();
+                                }
                             }
+                            e.target.submit();
+                        } else {
+                            alert('Field should not be empty.');
                         }
-                        e.target.submit();
+
                     });
                 },
              },

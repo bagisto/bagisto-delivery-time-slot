@@ -11,8 +11,13 @@ class DeliveryTimeSlotsOrders extends Model implements DeliveryTimeSlotsOrdersCo
 {
     protected $table = 'delivery_time_slots_orders';
 
-    protected $fillable = ['id', 'time_slot_id', 'delivery_date', 'order_id','customer_id'];
-
+    protected $fillable = [
+        'id',
+        'time_slot_id',
+        'delivery_date',
+        'order_id',
+        'customer_id'
+    ];
 
     //get time slots
     public function time_slot()
@@ -26,4 +31,9 @@ class DeliveryTimeSlotsOrders extends Model implements DeliveryTimeSlotsOrdersCo
         return $this->hasMany(OrderItemProxy::modelClass(), 'order_id')->whereNull('parent_id');
     }
 
+    public function setDeliveryDateAttribute($value)
+    {
+        $date = explode(',', $value);
+        $this->attributes['delivery_date'] = date('Y-m-d', strtotime($date[1] . ' ' . $date[2]));
+    }
 }

@@ -216,7 +216,7 @@
                     },
 
                     fetchCountries: function () {
-                        let countriesEndPoint = `${this.$root.baseUrl}/api/countries?pagination=0`;
+                        let countriesEndPoint = '{{ route('shop.countries') }}';
 
                         this.$http.get(countriesEndPoint)
                             .then(response => {
@@ -226,7 +226,7 @@
                     },
 
                     fetchCountryStates: function () {
-                        let countryStateEndPoint = `${this.$root.baseUrl}/api/country-states?pagination=0`;
+                        let countryStateEndPoint = '{{ route('shop.countries.states') }}';
 
                         this.$http.get(countryStateEndPoint)
                             .then(response => {
@@ -343,7 +343,7 @@
                             if (! isValid)
                                 return;
 
-                            this.$http.post("{{ route('customer.checkout.exist') }}", {email: this.address.billing.email})
+                            this.$http.post("{{ route('shop.customer.checkout.exist') }}", {email: this.address.billing.email})
                             .then(response => {
                                 this.is_customer_exist = response.data ? 1 : 0;
 
@@ -356,7 +356,7 @@
                     },
 
                     loginCustomer: function () {
-                        this.$http.post("{{ route('customer.checkout.login') }}", {
+                        this.$http.post("{{ route('shop.customer.checkout.login') }}", {
                                 email: this.address.billing.email,
                                 password: this.address.billing.password
                             })
@@ -421,7 +421,7 @@
                         }
 
                         // Delivery Time Slot Start
-                        var shipping_save_route = "{{ route('shop.checkout.save-address') }}";
+                        var shipping_save_route = "{{ route('shop.checkout.save_address') }}";
                         if ( this.delivery_status == 1 ) {
                             var shipping_save_route = "{{ route('marketplace.timeslot.checkout.saveaddress') }}";
                         }
@@ -473,7 +473,7 @@
                     saveShipping: async function () {
                         this.disable_button = true;
 
-                        this.$http.post("{{ route('shop.checkout.save-shipping') }}", {'shipping_method': this.selected_shipping_method})
+                        this.$http.post("{{ route('shop.checkout.save_shipping') }}", {'shipping_method': this.selected_shipping_method})
                             .then(response => {
                                 this.$root.hideLoader();
                                 this.disable_button = false;
@@ -507,7 +507,7 @@
                             this.isCheckPayment = false;
                         
                             // Delivery Time Slot Start
-                            var paymant_save_route = "{{ route('shop.checkout.save-payment') }}";
+                            var paymant_save_route = "{{ route('shop.checkout.save_payment') }}";
                             var params = {'payment': this.selected_payment_method};
                             if ( this.delivery_status == 1 ) {
                                 paymant_save_route = "{{ route('marketplace.timeslot.checkout.save-payment') }}";
@@ -550,7 +550,7 @@
                             this.$root.showLoader();
 
                             // Delivery Time Slot Start
-                            var order_place_route = "{{ route('shop.checkout.save-order') }}";
+                            var order_place_route = "{{ route('shop.checkout.save_order') }}";
                             var params = {'_token': "{{ csrf_token() }}"};
                             if ( this.delivery_status == 1 ) {
                                 order_place_route = "{{ route('marketplace.timeslot.checkout.save-order') }}";

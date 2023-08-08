@@ -1,1 +1,2 @@
-<link rel="stylesheet" href="{{ bagisto_asset('css/delivery-time-slot.css') }}">
+
+<link rel="stylesheet" href="{{ asset('vendor/delivery-time-slot/assets/css/delivery-time-slot.css') }}">

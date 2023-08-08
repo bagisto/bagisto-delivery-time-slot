@@ -34,7 +34,11 @@ return [
             'seller' => 'Seller',
             'time' => 'Time',
             'date-day' => 'Date/Day',
-            'admin' => 'Admin'
+            'admin' => 'Admin',
+
+            'cart' => [
+                'message' => 'Delivery Time Slots are not available for this product.'
+            ]
         ],
     ],
 
@@ -51,7 +55,8 @@ return [
             'delivery-time-slots' => 'Delivery Time Slots',
             'admin-delivery-time-slots' => 'Admin Delivery Time Slots',
             'delivery-slots' => 'Delivery Slots',
-
+            'delete-confirm' => 'Are you sure you want to delete this slot?',
+            'start-time-error' => 'Start time should be different for the same delivery day.',
 
             'btn' => [
                 'delete' => 'Delete',
@@ -91,11 +96,13 @@ return [
             'enable' => 'Enable',
             'allowed-days' => 'Allowed Days',
             'display-total-days' => 'Display Total Days',
+            'display-time-format' => 'Display Time Format',
             'minimun-time' => 'Minimum Required Time in Order Process',
             'error-message' => 'Error Message if Time Slots not available.',
             'success-message' => ':name Saved successfully.',
             'setting' => 'Settings',
-            'delivery-time-slot' => 'Delivery Time Slot'
+            'delivery-time-slot' => 'Delivery Time Slot',
+            'show-message' => 'Show error message at the shop if slots are not available.'
         ],
     ],
 ];

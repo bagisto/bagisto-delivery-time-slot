@@ -3,7 +3,7 @@
 namespace Webkul\DeliveryTimeSlot\DataGrids\Admin;
 
 use Webkul\Ui\DataGrid\DataGrid;
-use DB;
+use Illuminate\Support\Facades\DB;
 
 class DeliveyTimeSlotsDataGrid extends DataGrid
 {
@@ -29,39 +29,47 @@ class DeliveyTimeSlotsDataGrid extends DataGrid
 
     public function addColumns()
     {
-        // $this->addColumn([
-        //     'index' => 'customer_name',
-        //     'label' => trans('delivery-time-slot::app.admin.datagrid.seller-name'),
-        //     'type' => 'string',
-        //     'searchable' => true,
-        //     'sortable' => true,
-        //     'filterable' => true,
-        //     // 'wrapper' => 'Admin'
-        // ]);
-
         $this->addColumn([
-            'index' => 'end_time',
-            'label' => trans('delivery-time-slot::app.admin.datagrid.end-time'),
-            'type' => 'datetime',
+            'index' => 'delivery_day',
+            'label' => trans('delivery-time-slot::app.admin.datagrid.delivery-day'),
+            'type' => 'string',
+            'sortable' => false,
             'searchable' => true,
-            'sortable' => true,
-            'filterable' => false,
-            'wrapper' => function($data) {
-                $endTime = date("g:i a", strtotime("{$data->end_time}"));
-                return strtoupper($endTime);
+            'filterable' => true,
+            'wrapper' => function ($data) {
+                return ucwords($data->delivery_day);
             }
         ]);
 
         $this->addColumn([
             'index' => 'start_time',
             'label' => trans('delivery-time-slot::app.admin.datagrid.start-time'),
-            'type' => 'integer',
+            'type' => 'string',
             'searchable' => true,
             'sortable' => true,
             'filterable' => false,
-            'wrapper' => function($data) {
-                $startTime = date("g:i a", strtotime("{$data->start_time}"));
-                return strtoupper($startTime);
+            'wrapper' => function ($data) {
+                if (core()->getConfigData('delivery_time_slot.settings.general.display_time_format') == 12) {
+                    return date('h:i A', strtotime($data->start_time));
+                }
+
+                return $data->start_time;
+            }
+        ]);
+
+        $this->addColumn([
+            'index' => 'end_time',
+            'label' => trans('delivery-time-slot::app.admin.datagrid.end-time'),
+            'type' => 'string',
+            'searchable' => true,
+            'sortable' => true,
+            'filterable' => false,
+            'wrapper' => function ($data) {
+                if (core()->getConfigData('delivery_time_slot.settings.general.display_time_format') == 12) {
+                    return date('h:i A', strtotime($data->end_time));
+                }
+
+                return $data->end_time;
             }
         ]);
 
@@ -73,30 +81,5 @@ class DeliveyTimeSlotsDataGrid extends DataGrid
             'searchable' => false,
             'filterable' => true
         ]);
-
-        $this->addColumn([
-            'index' => 'delivery_day',
-            'label' => trans('delivery-time-slot::app.admin.datagrid.delivery-day'),
-            'type' => 'string',
-            'sortable' => true,
-            'searchable' => false,
-            'filterable' => true,
-            'wrapper' => function ($data) {
-                return ucwords($data->delivery_day);
-            }
-        ]);
-
-        // $this->addColumn([
-        //     'index' => 'transaction_agent_id',
-        //     'label' => trans('delivery-time-slot::app.admin.datagrid.action'),
-        //     'type' => 'string',
-        //     'searchable' => false,
-        //     'sortable' => false,
-        //     'closure' => true,
-        //     'wrapper' => function($row) {
-        //         return '<a href = "' . route('admin.sales.orders.view', $row->id) .'">' .'Order'. '</a>';
-        //     }
-        // ]);
-
     }
 }
