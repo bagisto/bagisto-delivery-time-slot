@@ -1,3 +1,4 @@
-Vue.directive("debounce", require("./directives/debounce"));
-
-require('flatpickr/dist/flatpickr.css');
+/**
+ * This will track all the images and fonts for publishing.
+ */
+import.meta.glob(["../images/**", "../fonts/**"]);

@@ -1,16 +1,11 @@
 {
-    "name": "bagisto/bagisto-delivery-time-slot",
-    "description": "Allows the admin to set the delivery day along with the delivery time slots for their orders.",
-    "keywords": [
-        "bagisto",
-        "delivery time slot"
-    ],
-    "homepage": "https://github.com/bagisto/bagisto-delivery-time-slot",
+    "name": "bagisto/laravel-delivery-time-slot",
     "license": "MIT",
+    "description" : "Delivery Time Slot package",
     "authors": [
         {
-            "name": "Naresh Verma",
-            "email": "naresh.verma327@webkul.com"
+            "name": "Bagisto",
+            "email": "support@bagisto.com"
         }
     ],
     "require": {

@@ -12,11 +12,11 @@
     <div style="padding: 30px;">
         <div style="font-size: 20px;color: #242424;line-height: 30px;margin-bottom: 34px;">
             <span style="font-weight: bold;">
-                {{ __('shop::app.mail.order.heading') }}
+                @lang('shop::app.mail.order.heading')
             </span> <br>
 
             <p style="font-size: 16px;color: #5E5E5E;line-height: 24px;">
-            {{ __('shop::app.mail.order.dear-admin', ['admin_name' => config('mail.from.name')]) }},
+            @lang('shop::app.mail.order.dear-admin', ['admin_name' => config('mail.from.name')]),
             </p>
 
             <p style="font-size: 16px;color: #5E5E5E;line-height: 24px;">
@@ -29,13 +29,13 @@
         </div>
 
         <div style="font-weight: bold;font-size: 20px;color: #242424;line-height: 30px;margin-bottom: 20px !important;">
-            {{ __('shop::app.mail.order.summary') }}
+            @lang('shop::app.mail.order.summary')
         </div>
 
         <div style="display: flex;flex-direction: row;margin-top: 20px;justify-content: space-between;margin-bottom: 40px;">
             <div style="line-height: 25px;">
                 <div style="font-weight: bold;font-size: 16px;color: #242424;">
-                    {{ __('shop::app.mail.order.shipping-address') }}
+                    @lang('shop::app.mail.order.shipping-address')
                 </div>
 
                 <div>
@@ -53,11 +53,11 @@
                 <div>---</div>
 
                 <div style="margin-bottom: 40px;">
-                    {{ __('shop::app.mail.order.contact') }} : {{ $order->shipping_address->phone }}
+                    @lang('shop::app.mail.order.contact'): {{ $order->shipping_address->phone }}
                 </div>
 
                 <div style="font-size: 16px;color: #242424; font-weight: bold">
-                    {{ __('shop::app.mail.order.shipping') }}
+                    @lang('shop::app.mail.order.shipping') 
                 </div>
 
                 <div style="font-size: 16px;color: #242424;">
@@ -67,7 +67,7 @@
 
             <div style="line-height: 25px;">
                 <div style="font-weight: bold;font-size: 16px;color: #242424;">
-                    {{ __('shop::app.mail.order.billing-address') }}
+                    @lang('shop::app.mail.order.billing-address')
                 </div>
 
                 <div>
@@ -85,11 +85,11 @@
                 <div>---</div>
 
                 <div style="margin-bottom: 40px;">
-                    {{ __('shop::app.mail.order.contact') }} : {{ $order->billing_address->phone }}
+                    @lang('shop::app.mail.order.contact'): {{ $order->billing_address->phone }}
                 </div>
 
                 <div style="font-size: 16px; color: #242424; font-weight: bold">
-                    {{ __('shop::app.mail.order.payment') }}
+                    @lang('shop::app.mail.order.payment')
                 </div>
 
                 <div style="font-size: 16px; color: #242424;">
@@ -104,21 +104,21 @@
                 border-spacing: 0;width: 100%">
                     <thead>
                         <tr style="background-color: #f2f2f2">
-                            <th style="text-align: left;padding: 8px">{{ __('shop::app.customer.account.order.view.SKU') }}</th>
-                            <th style="text-align: left;padding: 8px">{{ __('shop::app.customer.account.order.view.product-name') }}</th>
-                            <th style="text-align: left;padding: 8px">{{ __('shop::app.customer.account.order.view.price') }}</th>
-                            <th style="text-align: left;padding: 8px">{{ __('shop::app.customer.account.order.view.qty') }}</th>
+                            <th style="text-align: left;padding: 8px">@lang('shop::app.customer.account.order.view.SKU')</th>
+                            <th style="text-align: left;padding: 8px">@lang('shop::app.customer.account.order.view.product-name')</th>
+                            <th style="text-align: left;padding: 8px">@lang('shop::app.customer.account.order.view.price')</th>
+                            <th style="text-align: left;padding: 8px">@lang('shop::app.customer.account.order.view.qty')</th>
                         </tr>
                     </thead>
 
                     <tbody>
                         @foreach ($order->items as $item)
                             <tr>
-                                <td data-value="{{ __('shop::app.customer.account.order.view.SKU') }}" style="text-align: left;padding: 8px">
+                                <td data-value="@lang('shop::app.customer.account.order.view.SKU') }}" style="text-align: left;padding: 8px">
                                     {{ $item->getTypeInstance()->getOrderedItem($item)->sku }}
                                 </td>
 
-                                <td data-value="{{ __('shop::app.customer.account.order.view.product-name') }}" style="text-align: left;padding: 8px">
+                                <td data-value="@lang('shop::app.customer.account.order.view.product-name') }}" style="text-align: left;padding: 8px">
                                     {{ $item->name }}
 
                                     @if (isset($item->additional['attributes']))
@@ -134,37 +134,34 @@
 
                                 <td>
                                     @php
-
                                         $timeslotOrderRepository = app('Webkul\DeliveryTimeSlot\Repositories\DeliveryTimeSlotsOrdersRepository');
 
                                         $orderSlots = collect();
 
-
-                                        $orderOfSeller = $timeslotOrderRepository->findOneWhere(['order_id' => $order->id]);
+                                        $orderOfSeller = $timeslotOrderRepository->findOneByField(['order_id' => $order->id]);
 
                                         $timeSlotData = [];
+
                                         if ($orderOfSeller) {
                                             if ($item->type == 'configurable') {
                                                 $item = $item->child;
                                             }
 
-
                                             $orderSlots->push([
                                                 'items' => [$item],
                                                 'timeOrderSlot' => $timeslotOrderRepository->with('time_slot')
-                                                ->findOneWhere([
+                                                ->findOneByField([
                                                     'order_id' => $order->id,
                                                 ])
                                             ]);
-
                                         }
 
                                         $timeSlotData = $orderSlots;
                                     @endphp
 
-                                    @if( ! empty($timeSlotData))
+                                    @if (! empty($timeSlotData))
                                         @foreach ($timeSlotData as $key => $timeSlot)
-                                            @foreach($timeSlot['items'] as $timeSlotItem)
+                                            @foreach ($timeSlot['items'] as $timeSlotItem)
 
                                                 <div style=" border: 3px solid #ccc;border-radius: 3px; display: inline-block; margin: 15px 0 0; padding: 2px 10px; text-transform: uppercase; vertical-align: top;">
                                                     <span>
@@ -191,11 +188,11 @@
                                     @endif
                                 </td>
 
-                                <td data-value="{{ __('shop::app.customer.account.order.view.price') }}" style="text-align: left;padding: 8px">
+                                <td data-value="@lang('shop::app.customer.account.order.view.price') }}" style="text-align: left;padding: 8px">
                                     {{ core()->formatPrice($item->price, $order->order_currency_code) }}
                                 </td>
 
-                                <td data-value="{{ __('shop::app.customer.account.order.view.qty') }}" style="text-align: left;padding: 8px">
+                                <td data-value="@lang('shop::app.customer.account.order.view.qty') }}" style="text-align: left;padding: 8px">
                                     {{ $item->qty_ordered }}
                                 </td>
                             </tr>
@@ -207,14 +204,14 @@
 
         <div style="font-size: 16px;color: #242424;line-height: 30px;float: right;width: 40%;margin-top: 20px;">
             <div>
-                <span>{{ __('shop::app.mail.order.subtotal') }}</span>
+                <span>@lang('shop::app.mail.order.subtotal')</span>
                 <span style="float: right;">
                     {{ core()->formatBasePrice($order->base_sub_total) }}
                 </span>
             </div>
 
             <div>
-                <span>{{ __('shop::app.mail.order.shipping-handling') }}</span>
+                <span>@lang('shop::app.mail.order.shipping-handling')</span>
                 <span style="float: right;">
                     {{ core()->formatBasePrice($order->base_shipping_amount) }}
                 </span>
@@ -222,7 +219,7 @@
 
             @foreach (Webkul\Tax\Helpers\Tax::getTaxRatesWithAmount($order, true) as $taxRate => $baseTaxAmount )
             <div>
-                <span id="taxrate-{{ core()->taxRateAsIdentifier($taxRate) }}">{{ __('shop::app.mail.order.tax') }} {{ $taxRate }} %</span>
+                <span id="taxrate-{{ core()->taxRateAsIdentifier($taxRate) }}">@lang('shop::app.mail.order.tax') }} {{ $taxRate }} %</span>
                 <span id="basetaxamount-{{ core()->taxRateAsIdentifier($taxRate) }}" style="float: right;">
                     {{ core()->formatBasePrice($baseTaxAmount) }}
                 </span>
@@ -231,7 +228,7 @@
 
             @if ($order->discount_amount > 0)
                 <div>
-                    <span>{{ __('shop::app.mail.order.discount') }}</span>
+                    <span>@lang('shop::app.mail.order.discount')</span>
                     <span style="float: right;">
                         {{ core()->formatBasePrice($order->base_discount_amount) }}
                     </span>
@@ -239,7 +236,7 @@
             @endif
 
             <div style="font-weight: bold">
-                <span>{{ __('shop::app.mail.order.grand-total') }}</span>
+                <span>@lang('shop::app.mail.order.grand-total')</span>
                 <span style="float: right;">
                     {{ core()->formatBasePrice($order->base_grand_total) }}
                 </span>
@@ -256,7 +253,7 @@
             </p>
 
             <p style="font-size: 16px;color: #5E5E5E;line-height: 24px;">
-                {{ __('shop::app.mail.order.thanks') }}
+                @lang('shop::app.mail.order.thanks') 
             </p>
         </div>
     </div>

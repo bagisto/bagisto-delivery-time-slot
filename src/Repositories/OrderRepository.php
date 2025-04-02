@@ -3,207 +3,407 @@
 namespace Webkul\DeliveryTimeSlot\Repositories;
 
 use Illuminate\Container\Container as App;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Webkul\Core\Eloquent\Repository;
 use Webkul\Sales\Contracts\Order;
-use Webkul\Sales\Generators\OrderSequencer;
+use Webkul\Sales\Models\Order as OrderModel;
 use Webkul\Sales\Repositories\OrderItemRepository;
-use Webkul\Sales\Repositories\DownloadableLinkPurchasedRepository;
+use Webkul\Core\Models\CoreConfig;
 use Webkul\DeliveryTimeSlot\Repositories\DeliveryTimeSlotsOrdersRepository;
 
 class OrderRepository extends Repository
 {
     /**
-     * Order item repository instance.
-     *
-     * @var \Webkul\Sales\Repositories\OrderItemRepository
-     */
-    protected $orderItemRepository;
-
-    /**
-     * Downloadable link purchased repository instance.
-     *
-     * @var \Webkul\Sales\Repositories\DownloadableLinkPurchasedRepository
-     */
-    protected $downloadableLinkPurchasedRepository;
-
-    /**
-     * DeliveryTimeSlotsOrdersRepository Instance Object
-     *
-     * @var \Webkul\DeliveryTimeSlot\Repositories\DeliveryTimeSlotsOrdersRepository
-     */
-    protected $deliveryTimeSlotsOrdersRepository;
-
-    /**
      * Create a new repository instance.
-     *
-     * @param  \Webkul\Sales\Repositories\OrderItemRepository  $orderItemRepository
-     * @param  \Webkul\Sales\Repositories\DownloadableLinkPurchasedRepository  $downloadableLinkPurchasedRepository
-     * @param  \Webkul\DeliveryTimeSlot\Repositories\DeliveryTimeSlotsOrdersRepository  $deliveryTimeSlotsOrdersRepository
-     * @param  \Illuminate\Container\Container  $app
+     * 
      * @return void
      */
     public function __construct(
-        OrderItemRepository $orderItemRepository,
-        DownloadableLinkPurchasedRepository $downloadableLinkPurchasedRepository,
-        DeliveryTimeSlotsOrdersRepository $deliveryTimeSlotsOrdersRepository,
+        protected OrderItemRepository $orderItem,
+        protected DeliveryTimeSlotsOrdersRepository $deliveryTimeSlots,
         App $app
-    ) {
-        $this->orderItemRepository = $orderItemRepository;
-
-        $this->downloadableLinkPurchasedRepository = $downloadableLinkPurchasedRepository;
-
-        $this->deliveryTimeSlotsOrdersRepository = $deliveryTimeSlotsOrdersRepository;
-
+    )
+    {
         parent::__construct($app);
     }
 
     /**
-     * Specify model class name.
+     * Specify Model class name
      *
-     * @return string
+     * @return Mixed
      */
-    public function model()
+    public  function model()
     {
         return Order::class;
     }
 
     /**
-     * This method will try attempt to a create order.
-     *
-     * @return \Webkul\Sales\Contracts\Order
+     * Create order.
+     * 
+     * @param array $data
+     * @return mixed
      */
-    public function createOrderIfNotThenRetry(array $data)
+    public function create(array $data)
     {
         DB::beginTransaction();
 
-        try {
-            Event::dispatch('checkout.order.save.before', [$data]);
+        Event::dispatch('checkout.order.save.before', $data);
 
-            if (isset($data['customer']) && $data['customer']) {
-                $data['customer_id'] = $data['customer']->id;
-                $data['customer_type'] = get_class($data['customer']);
-            } else {
-                unset($data['customer']);
-            }
+        if (
+            isset($data['customer']) 
+            && $data['customer']
+        ) {
+            $data['customer_id'] = $data['customer']->id;
 
-            if (isset($data['channel']) && $data['channel']) {
-                $data['channel_id'] = $data['channel']->id;
-                $data['channel_type'] = get_class($data['channel']);
-                $data['channel_name'] = $data['channel']->name;
-            } else {
-                unset($data['channel']);
-            }
+            $data['customer_type'] = get_class($data['customer']);
+        } else {
+             unset($data['customer']);
+        }
 
-            $data['status'] = 'pending';
+        if ( 
+            isset($data['channel']) 
+            && $data['channel']
+        ) {
+            $data['channel_id'] = $data['channel']->id;
 
-            $order = $this->model->create(array_merge($data, ['increment_id' => $this->generateIncrementId()]));
+            $data['channel_type'] = get_class($data['channel']);
 
-            // Delivery Time Slot Start
-            if ( core()->getConfigData('delivery_time_slot.settings.general.status') ) {
-                $this->createDeliveryTimeSlotOrder($order);
-            }// Delivery Time Slot End
+            $data['channel_name'] = $data['channel']->name;
+        } else {
+            unset($data['channel']);
+        }
 
-            $order->payment()->create($data['payment']);
+        $data['status'] = 'pending';
 
-            if (isset($data['shipping_address'])) {
-                $order->addresses()->create($data['shipping_address']);
-            }
+        $order = $this->model->create(array_merge($data, ['increment_id' => $this->generateIncrementId()]));
+          
+        /** time slot */
+        if (empty($timeSlot['selected_delivery_slot'])) {
+            $timeSlot = session()->get('selected_delivery_slot');
+        }
 
-            $order->addresses()->create($data['billing_address']);
+        if (
+            isset($order) 
+            && isset($timeSlot) 
+            && ! empty($timeSlot['selected_delivery_slot'])
+        ) {
+            $timeSlot = $timeSlot['selected_delivery_slot'];
+        }
 
-            foreach ($data['items'] as $item) {
-                Event::dispatch('checkout.order.orderitem.save.before', $data);
-
-                $orderItem = $this->orderItemRepository->create(array_merge($item, ['order_id' => $order->id]));
-
-                if (isset($item['children']) && $item['children']) {
-                    foreach ($item['children'] as $child) {
-                        $this->orderItemRepository->create(array_merge($child, ['order_id' => $order->id, 'parent_id' => $orderItem->id]));
-                    }
+        if ( 
+            isset($order) 
+            && isset($timeSlot)
+        ) {
+            foreach ($timeSlot as $key => $slot) {
+               if ((int)$slot[1] == 0) {
+                   $sellerId = NULL;
+                } else {
+                   $sellerId = (int)$slot[1];
                 }
 
-                $this->orderItemRepository->manageInventory($orderItem);
+                $deliverySlotData = [
+                  'time_slot_id'          => $slot[0],
+                  'order_id'              => $order->id,
+                  'marketplace_seller_id' => $sellerId,
+                  'delivery_date'         => $slot[2].','.$slot['3'].','.$slot[4],
+                  'customer_id'           => $order->customer_id,
+               ];
 
-                $this->downloadableLinkPurchasedRepository->saveLinks($orderItem, 'available');
-
-                Event::dispatch('checkout.order.orderitem.save.after', $data);
+               $this->deliveryTimeSlots->create($deliverySlotData);
             }
-
-            Event::dispatch('checkout.order.save.after', $order);
-        } catch (\Exception $e) {
-            /* rolling back first */
-            DB::rollBack();
-
-            /* storing log for errors */
-            Log::error(
-                'OrderRepository:createOrderIfNotThenRetry: ' . $e->getMessage(),
-                ['data' => $data]
-            );
-
-            /* recalling */
-            $this->createOrderIfNotThenRetry($data);
-        } finally {
-            /* commit in each case */
-            DB::commit();
         }
+
+        $order->payment()->create($data['payment']);
+            
+        if (isset($data['shipping_address'])) {
+            $order->addresses()->create($data['shipping_address']);
+         }
+
+        $order->addresses()->create($data['billing_address']);
+
+        foreach ($data['items'] as $item) {
+            $orderItem = $this->orderItem->create(array_merge($item, ['order_id' => $order->id]));
+
+            if (
+                isset($item['child']) 
+                && $item['child']
+            ) {
+                $orderItem->child = $this->orderItem->create(array_merge($item['child'], ['order_id' => $order->id, 'parent_id' => $orderItem->id]));
+            }
+                
+            $this->orderItem->manageInventory($orderItem);
+        }
+
+        Event::dispatch('checkout.order.save.after', $order);
+
+        DB::commit();
+
+        session()->forget('selected_delivery_slot');
 
         return $order;
     }
 
     /**
-     * Create order.
-     *
-     * @param  array  $data
-     * @return \Webkul\Sales\Contracts\Order
+     * Cancel order.
+     * 
+     * @return mixed
      */
-    public function create(array $data)
+    public function cancel(int $orderId)
     {
-        return $this->createOrderIfNotThenRetry($data);
+        $order = $this->findOrFail($orderId);
+
+        if (! $order->canCancel()) 
+        {
+            return false;
+        }
+
+        Event::dispatch('sales.order.cancel.before', $order);
+
+        foreach ($order->items as $item) {
+            if ($item->qty_to_cancel) {
+                $this->orderItem->returnQtyToProductInventory($item);
+
+                $item->qty_canceled += $item->qty_to_cancel;
+
+                $item->save();
+            }
+        }
+
+        $this->updateOrderStatus($order);
+
+        Event::dispatch('sales.order.cancel.after', $order);
+
+        return true;
     }
 
     /**
-     * Generate increment id.
-     *
-     * @return int
+     * Get increment id.
+     * 
+     * @inheritDoc
+     * @return int|string
      */
     public function generateIncrementId()
     {
-        return app(OrderSequencer::class)->resolveGeneratorClass();
+        $config = new CoreConfig();
+
+        $invoiceNumberPrefix = $config->where('code','=',"sales.orderSettings.order_number.order_number_prefix")->first()
+            ? $config->where('code','=',"sales.orderSettings.order_number.order_number_prefix")->first()->value : false;
+
+        $invoiceNumberLength = $config->where('code','=',"sales.orderSettings.order_number.order_number_length")->first()
+            ? $config->where('code','=',"sales.orderSettings.order_number.order_number_length")->first()->value : false;
+
+        $invoiceNumberSuffix = $config->where('code','=',"sales.orderSettings.order_number.order_number_suffix")->first()
+            ? $config->where('code','=',"sales.orderSettings.order_number.order_number_suffix")->first()->value: false;
+
+        $lastOrder = $this->model->orderBy('id', 'desc')->limit(1)->first();
+        $lastId = $lastOrder ? $lastOrder->id : 0;
+
+        if (
+            $invoiceNumberLength 
+            && ( $invoiceNumberPrefix 
+            || $invoiceNumberSuffix) 
+        ) {
+            $invoiceNumber = $invoiceNumberPrefix . sprintf("%0{$invoiceNumberLength}d", 0) . ($lastId + 1) . $invoiceNumberSuffix;
+        } else {
+            $invoiceNumber = $lastId + 1;
+        }
+
+        return $invoiceNumber;
     }
 
     /**
-     * Create DeliveryTimeSlot Order.
      * 
-     * @param  \Webkul\Sales\Contracts\Order    $order
-     * @return \Webkul\DeliveryTimeSlot\Contracts\DeliveryTimeSlotsOrders
+     * check if order in completed state.
+     * 
+     * @param mixed $order
+     * @return void
      */
-    public function createDeliveryTimeSlotOrder($order)
+    public function isInCompletedState($order)
     {
-        if (! isset($timeSlot['selected_delivery_slot']) ) {
-            $timeSlot = session()->get('selected_delivery_slot');
+        $totalQtyOrdered = $totalQtyInvoiced = $totalQtyShipped = $totalQtyRefunded = $totalQtyCanceled = 0;
+
+        foreach ($order->items as $item) {
+            $totalQtyOrdered += $item->qty_ordered;
+
+            $totalQtyInvoiced += $item->qty_invoiced;
+
+            $totalQtyShipped += $item->qty_shipped;
+
+            $totalQtyRefunded += $item->qty_refunded;
+
+            $totalQtyCanceled += $item->qty_canceled;
         }
 
-        if ( $order && isset($timeSlot) && $timeSlot ) {
-
-            foreach ($timeSlot as $key => $slot) {
-                $sellerId = NULL;
-                if ( isset($slot[1]) && $slot[1]) {
-                    $sellerId = (int) $slot[1];
-                }
-                
-                $deliverySlotData = [
-                    'time_slot_id'          => $slot[0],
-                    'order_id'              => $order->id,
-                    'marketplace_seller_id' => $sellerId,
-                    'delivery_date'         => $slot[2] . ',' . $slot[3] . ',' . $slot[4],
-                    'customer_id'           => $order->customer_id
-                ];
-
-                $this->deliveryTimeSlotsOrdersRepository->create($deliverySlotData);
-            }
+        if (
+            $totalQtyOrdered != ($totalQtyRefunded + $totalQtyCanceled)
+            && $totalQtyOrdered == $totalQtyInvoiced + $totalQtyCanceled
+            && $totalQtyOrdered == $totalQtyShipped + $totalQtyRefunded + $totalQtyCanceled
+        ) {
+            return true;
         }
+
+        return false;
+    }
+
+    /**
+     * Check if order in cancel state.
+     * 
+     * @param mixed $order
+     * @return boolean
+     */
+    public function isInCanceledState($order)
+    {
+        $totalQtyOrdered = 0;
+
+        $totalQtyCanceled = 0;
+
+        foreach ($order->items as $item) {
+            $totalQtyOrdered += $item->qty_ordered;
+
+            $totalQtyCanceled += $item->qty_canceled;
+        }
+
+        if ($totalQtyOrdered == $totalQtyCanceled){
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if order in closed state.
+     * 
+     * @param mixed $order
+     * @return boolean
+     */
+    public function isInClosedState($order)
+    {
+        $totalQtyOrdered = 0;
+
+        $totalQtyRefunded = 0;
+
+        $totalQtyCanceled = 0;
+
+        foreach ($order->items  as $item) {
+            $totalQtyOrdered += $item->qty_ordered;
+
+            $totalQtyRefunded += $item->qty_refunded;
+
+            $totalQtyCanceled += $item->qty_canceled;
+        }
+
+        if ($totalQtyOrdered == $totalQtyRefunded + $totalQtyCanceled) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Update order status.
+     * 
+     * @param mixed $order
+     * @return void
+     */
+    public function updateOrderStatus($order)
+    {
+        $status = OrderModel::STATUS_PROCESSING;
+
+        if ($this->isInCompletedState($order)) {
+            $status = OrderModel::STATUS_COMPLETED;
+        }
+
+        if ($this->isInCanceledState($order)) {
+            $status = OrderModel::STATUS_CANCELED;
+        } else if ($this->isInClosedState($order)) {
+            $status = OrderModel::STATUS_CLOSED;
+        }
+
+        $order->status = $status;
+        
+        $order->save();
+    }
+
+    /**
+     * Collect totals.
+     * 
+     * @param mixed $order
+     * @return mixed
+     */
+    public function collectTotals($order)
+    {
+        $order->sub_total_invoiced = $order->base_sub_total_invoiced = 0;
+
+        $order->shipping_invoiced = $order->base_shipping_invoiced = 0;
+
+        $order->tax_amount_invoiced = $order->base_tax_amount_invoiced = 0;
+
+        $order->discount_invoiced = $order->base_discount_invoiced = 0;
+
+        foreach ($order->invoices as $invoice) {
+            $order->sub_total_invoiced += $invoice->sub_total;
+
+            $order->base_sub_total_invoiced += $invoice->base_sub_total;
+
+            $order->shipping_invoiced += $invoice->shipping_amount;
+
+            $order->base_shipping_invoiced += $invoice->base_shipping_amount;
+
+            $order->tax_amount_invoiced += $invoice->tax_amount;
+
+            $order->base_tax_amount_invoiced += $invoice->base_tax_amount;
+
+            $order->discount_invoiced += $invoice->discount_amount;
+
+            $order->base_discount_invoiced += $invoice->base_discount_amount;
+        }
+
+        $order->grand_total_invoiced = $order->sub_total_invoiced + $order->shipping_invoiced + $order->tax_amount_invoiced - $order->discount_invoiced;
+
+        $order->base_grand_total_invoiced = $order->base_sub_total_invoiced + $order->base_shipping_invoiced + $order->base_tax_amount_invoiced - $order->base_discount_invoiced;
+
+        /**
+         * Order refund total
+         */
+        $order->sub_total_refunded = $order->base_sub_total_refunded = 0;
+
+        $order->shipping_refunded = $order->base_shipping_refunded = 0;
+
+        $order->tax_amount_refunded = $order->base_tax_amount_refunded = 0;
+
+        $order->discount_refunded = $order->base_discount_refunded = 0;
+
+        $order->grand_total_refunded = $order->base_grand_total_refunded = 0;
+
+        foreach ($order->refunds as $refund) {
+            $order->sub_total_refunded += $refund->sub_total;
+
+            $order->base_sub_total_refunded += $refund->base_sub_total;
+
+            $order->shipping_refunded += $refund->shipping_amount;
+
+            $order->base_shipping_refunded += $refund->base_shipping_amount;
+
+            $order->tax_amount_refunded += $refund->tax_amount;
+
+            $order->base_tax_amount_refunded += $refund->base_tax_amount;
+
+            $order->discount_refunded += $refund->discount_amount;
+
+            $order->base_discount_refunded += $refund->base_discount_amount;
+
+            $order->grand_total_refunded += $refund->adjustment_refund - $refund->adjustment_fee;
+
+            $order->base_grand_total_refunded += $refund->base_adjustment_refund - $refund->base_adjustment_fee;
+        }
+
+        $order->grand_total_refunded += $order->sub_total_refunded + $order->shipping_refunded + $order->tax_amount_refunded - $order->discount_refunded;
+        
+        $order->base_grand_total_refunded += $order->base_sub_total_refunded + $order->base_shipping_refunded + $order->base_tax_amount_refunded - $order->base_discount_refunded;
+
+        $order->save();
+
+        return $order;
     }
 }

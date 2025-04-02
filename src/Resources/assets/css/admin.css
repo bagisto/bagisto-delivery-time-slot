@@ -1,0 +1,36 @@
+@tailwind components;
+
+@font-face {
+    font-family: "icomoon";
+    src:url('../fonts/icomoon.woff?2z1zho') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: block;
+}
+
+@layer components{
+    [class^="icon1-"], [class*=" icon1-"] {
+        /* use !important to prevent issues with browser extensions that change fonts */
+        font-family: 'icomoon' !important;
+        speak: never;
+        font-style: normal;
+        font-weight: normal;
+        font-variant: normal;
+        text-transform: none;
+        line-height: 1;
+        color: #6b7280;
+      
+        /* Better Font Rendering =========== */
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+    
+    html.dark [class^="icon1-"],
+    html.dark [class*=" icon1-"]{
+        color: #d1d5db;
+    }
+
+    .icon1-clock:before {
+        content: "\e952";
+    }
+}

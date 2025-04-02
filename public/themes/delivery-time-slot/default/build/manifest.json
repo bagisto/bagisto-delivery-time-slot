@@ -1,0 +1,33 @@
+{
+  "src/Resources/assets/css/admin.css": {
+    "file": "assets/admin-c0c24855.css",
+    "isEntry": true,
+    "src": "src/Resources/assets/css/admin.css"
+  },
+  "src/Resources/assets/css/app.css": {
+    "file": "assets/app-da4f5917.css",
+    "isEntry": true,
+    "src": "src/Resources/assets/css/app.css"
+  },
+  "src/Resources/assets/fonts/delivery-time.woff": {
+    "file": "assets/delivery-time-7a9258fe.woff",
+    "src": "src/Resources/assets/fonts/delivery-time.woff"
+  },
+  "src/Resources/assets/fonts/icomoon.woff": {
+    "file": "assets/icomoon-41ecb19b.woff",
+    "src": "src/Resources/assets/fonts/icomoon.woff"
+  },
+  "src/Resources/assets/images/Icon-PWA-Active.svg": {
+    "file": "assets/Icon-PWA-Active-d4fab35c.svg",
+    "src": "src/Resources/assets/images/Icon-PWA-Active.svg"
+  },
+  "src/Resources/assets/images/Icon-PWA.svg": {
+    "file": "assets/Icon-PWA-2ac85149.svg",
+    "src": "src/Resources/assets/images/Icon-PWA.svg"
+  },
+  "src/Resources/assets/js/app.js": {
+    "file": "assets/app-4ed993c7.js",
+    "isEntry": true,
+    "src": "src/Resources/assets/js/app.js"
+  }
+}

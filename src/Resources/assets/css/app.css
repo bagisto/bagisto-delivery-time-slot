@@ -1,0 +1,44 @@
+@tailwind components;
+
+@font-face {
+    font-family: "delivery-time";
+    src:url('../fonts/delivery-time.woff?uldutm') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: block;
+}
+
+@layer components{
+    [class^="delivery-"], [class*=" delivery-"] {
+        /* use !important to prevent issues with browser extensions that change fonts */
+        font-family: 'delivery-time' !important;
+        speak: never;
+        font-style: normal;
+        font-weight: normal;
+        font-variant: normal;
+        text-transform: none;
+        line-height: 1;
+        color: #6b7280;
+      
+        /* Better Font Rendering =========== */
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+    
+    html.dark [class^="delivery-"],
+    html.dark [class*=" delivery-"]{
+        color: #d1d5db;
+    }
+
+    .text-white{
+        color: rgb(255 255 255);;
+    }
+      
+    .delivery-time-slot-icon:before {
+       content: "\e100";
+    }
+
+    .bg-red-300 {
+        background-color: rgb(252 165 165);
+    }
+}

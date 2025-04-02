@@ -11,19 +11,29 @@ class Order extends OrderBaseModel
 {
     /**
      * Get the delieveryInfo associated with order.
+     * 
+     * @return void
      */
     public function deliveryTimeSlotsOrders()
     {
         return $this->hasOne(DeliveryTimeSlotsOrders::class);
     }
 
-    //get time slots
+    /**
+     * Get time slots
+     * 
+     * @return void
+     */
     public function orderItems()
     {
         return $this->hasMany(OrderItemProxy::modelClass(), 'order_id')->whereNull('parent_id');
     }
 
-    //get time slots
+    /**
+     * Get time slots.
+     * 
+     * @return void
+     */
     public function orderSlots()
     {
         return $this->hasMany(DeliveryTimeSlotsOrdersProxy::modelClass());

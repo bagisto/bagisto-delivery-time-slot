@@ -14,13 +14,8 @@ class EventServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        Event::listen('bagisto.admin.layout.head', function($viewRenderEventManager) {
-            $viewRenderEventManager->addTemplate('delivery_time_slot::admin.layouts.style');
+        Event::listen('bagisto.shop.layout.head', function($viewRenderEventManager) {
+            $viewRenderEventManager->addTemplate('delivery_time_slot::components.style');
         });
-
-        Event::listen('bagisto.shop.layout.body.before', function($viewRenderEventManager) {
-            $viewRenderEventManager->addTemplate('delivery_time_slot::shop.default.layouts.master');
-        });
-
     }
 }

@@ -2,96 +2,92 @@
 
 namespace Webkul\DeliveryTimeSlot\Http\Controllers\Admin\Sales;
 
-use Webkul\Admin\Http\Controllers\Controller;
 use Webkul\Sales\Repositories\OrderRepository;
+use Webkul\Sales\Repositories\OrderCommentRepository;
 use Webkul\DeliveryTimeSlot\Repositories\DeliveryTimeSlotsOrdersRepository;
+use Webkul\Admin\Http\Controllers\Sales\OrderController as BaseOrderController;
 
-class OrderController extends Controller
+class OrderController extends BaseOrderController
 {
     /**
-     * Display a listing of the resource.
+     * orderSlots object.
      *
-     * @return \Illuminate\Http\Response
+     * @var object
      */
-    protected $_config;
-
-    /**
-     * OrderRepository object
-     *
-     * @var \Webkul\Sales\Repositories\OrderRepository
-     */
-    protected $orderRepository;
-
-    /**
-     * DeliveryTimeSlotsOrdersRepository object
-     *
-     * @var \Webkul\DeliveryTimeSlot\Repositories\DeliveryTimeSlotsOrdersRepository
-     */
-    protected $deliveryTimeSlotsOrdersRepository;
+    protected $orderSlots;
 
     /**
      * Create a new controller instance.
-     *
-     * @param   \Webkul\Sales\Repositories\OrderRepository  $orderRepository
-     * @param   \Webkul\DeliveryTimeSlot\Repositories\DeliveryTimeSlotsOrdersRepository $timeslotOrderRepository;
+     * 
      * @return void
      */
     public function __construct(
-        OrderRepository $orderRepository,
-        DeliveryTimeSlotsOrdersRepository $deliveryTimeSlotsOrdersRepository
-    )
-    {
-        $this->middleware('admin');
-
-        $this->_config = request('_config');
-
-        $this->orderRepository = $orderRepository;
-
-        $this->deliveryTimeSlotsOrdersRepository = $deliveryTimeSlotsOrdersRepository;
-
+        protected OrderRepository $orderRepository,
+        protected OrderCommentRepository $orderCommentRepository,
+        protected DeliveryTimeSlotsOrdersRepository $timeSlotOrderRepository,
+        
+    ) {
         $this->orderSlots = collect();
     }
 
     /**
      * Show the view for the specified resource.
      *
-     * @param  int  $id
-     * @return \Illuminate\View\View
+     * @param int $id
+     * @return \Illuminate\view\view
      */
     public function view($id)
     {
         $order = $this->orderRepository->findOrFail($id);
 
-        if ( core()->getConfigData('delivery_time_slot.settings.general.status') ) {
-            $deliveryTimeSlot = $this->deliveryTimeSlotsOrdersRepository->findOneByField('order_id', $id);
+        $timeFormat = core()->getConfigData('delivery_time_slot.settings.general.time_format');
 
-            $timeSlotData = [];
-            if ( $deliveryTimeSlot ) {
-                foreach ($order->items as $key => $item) {
-                    if ($item->type == 'configurable') {
-                        $item = $item->child;
-                    }
+        $timeSlotOrder = $this->timeSlotOrderRepository->findOneByField('order_id', $id);
+    
+        $timeSlotData = [];
 
-                    $deliveryTimeSlot = $this->deliveryTimeSlotsOrdersRepository->with('time_slot')->findOneWhere([
-                        'order_id'      => $id,
-                        'customer_id'   => $order->customer_id
-                    ]);
+        $timeSlot = $this->timeSlotOrderRepository->with('time_slot')->findOneByField('order_id', $id);
 
-                    if ( $deliveryTimeSlot ) {
-                        $this->orderSlots->push([
-                            'items'         => [$item],
-                            'timeOrderSlot' => $deliveryTimeSlot
-                        ]);
-                    }
-                }
+        if ($timeSlotOrder) {
+            $timeStamp1 = strtotime($timeSlot->start_time);
+
+            $timeStamp2 = strtotime($timeSlot->end_time);
+    
+            $startTime = date('H:i A', $timeStamp1);
+     
+            $endTime = date('H:i A', $timeStamp2);   
+                
+            if ($timeFormat == "12 hours") { 
+                $startTime = date('h:i A', $timeStamp1);
+    
+                $endTime = date('h:i A', $timeStamp2);  
             }
 
-            $timeSlotData = $this->orderSlots;
+            $timeSlot['start_time'] = $startTime;
 
-            return view($this->_config['view'], compact('order', 'timeSlotData'));
-        } else {
+            $timeSlot['end_time'] = $endTime;
 
-            return view($this->_config['view'], compact('order'));    
+            $timeSlot['delivery_date'] = \Carbon\Carbon::parse($timeSlot['delivery_date'])->format('M d,Y');
+
+            $timeSlot['delivery_day'] = ucfirst($timeSlot['delivery_day']);
+ 
+            foreach ($order->items as $key => $item) {
+                if ($item->type == 'configurable') {
+                    $item = $item->child;
+                }
+
+                $this->orderSlots->push([
+                    'items'         => [$item],
+                    'timeOrderSlot' => $timeSlot ?? null,
+                ]);
+            }
         }
+
+        $timeSlotData = $this->orderSlots;
+      
+        return view('delivery_time_slot::admin.sales.orders.view')->with([
+            'order'        => $order, 
+            'timeSlotData' => $timeSlotData,
+        ]);
     }
 }

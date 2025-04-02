@@ -4,7 +4,6 @@ namespace Webkul\DeliveryTimeSlot\Repositories;
 
 use Webkul\Core\Eloquent\Repository;
 
-
 class DeliveryTimeSlotsOrdersRepository extends Repository
 {
     /**
@@ -12,7 +11,7 @@ class DeliveryTimeSlotsOrdersRepository extends Repository
      *
      * @return mixed
      */
-    function model()
+    public function model()
     {
         return 'Webkul\DeliveryTimeSlot\Contracts\DeliveryTimeSlotsOrders';
     }
