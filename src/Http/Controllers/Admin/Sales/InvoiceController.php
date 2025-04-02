@@ -2,113 +2,40 @@
 
 namespace Webkul\DeliveryTimeSlot\Http\Controllers\Admin\Sales;
 
-use PDF;
-use Webkul\Admin\Http\Controllers\Controller;
-use Webkul\Sales\Repositories\InvoiceRepository;
+use Webkul\Core\Traits\PDFHandler;
 use Webkul\Sales\Repositories\OrderRepository;
+use Webkul\Sales\Repositories\InvoiceRepository;
+use Webkul\Sales\Repositories\OrderRepository as Order;
+use Webkul\Sales\Repositories\InvoiceRepository as Invoice;
+use Webkul\Admin\Listeners\Invoice as InvoiceListener;
 use Webkul\DeliveryTimeSlot\Repositories\DeliveryTimeSlotsOrdersRepository;
+use Webkul\Admin\Http\Controllers\Sales\InvoiceController as BaseInvoiceController;
 
-class InvoiceController extends Controller
+class InvoiceController extends BaseInvoiceController
 {
-    /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    protected $_config;
+    use PDFHandler;
 
     /**
-     * Order repository instance.
+     * orderSlots object
      *
-     * @var \Webkul\Sales\Repositories\OrderRepository
+     * @var object
      */
-    protected $orderRepository;
-
-    /**
-     * Invoice repository instance.
-     *
-     * @var \Webkul\Sales\Repositories\InvoiceRepository
-     */
-    protected $invoiceRepository;
-
-    /**
-     * DeliveryTimeSlotsOrders repository instance.
-     *
-     * @var \Webkul\DeliveryTimeSlot\Repositories\DeliveryTimeSlotsOrdersRepository
-     */
-    protected $deliveryTimeSlotsOrdersRepository;
+    protected $orderSlots;
 
     /**
      * Create a new controller instance.
      *
-     * @param  \Webkul\Sales\Repositories\OrderRepository  $orderRepository
-     * @param  \Webkul\Sales\Repositories\InvoiceRepository  $invoiceRepository
-     * @param  \Webkul\DeliveryTimeSlot\Repositories\DeliveryTimeSlotsOrdersRepository $deliveryTimeSlotsOrdersRepository
      * @return void
      */
     public function __construct(
-        OrderRepository $orderRepository,
-        InvoiceRepository $invoiceRepository,
-        DeliveryTimeSlotsOrdersRepository $deliveryTimeSlotsOrdersRepository
+        protected OrderRepository $orderRepository,
+        protected InvoiceRepository $invoiceRepository,
+        protected InvoiceListener $invoiceListener,
+        protected Invoice $invoice,
+        protected Order $order,
+        protected DeliveryTimeSlotsOrdersRepository $timeSlotOrderRepository,
     ) {
-        $this->middleware('admin');
-
-        $this->_config = request('_config');
-
-        $this->orderRepository = $orderRepository;
-
-        $this->invoiceRepository = $invoiceRepository;
-        
-        $this->deliveryTimeSlotsOrdersRepository = $deliveryTimeSlotsOrdersRepository;
-
         $this->orderSlots = collect();
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @param  int  $orderId
-     * @return \Illuminate\View\View
-     */
-    public function create($orderId)
-    {
-        $order = $this->orderRepository->findOrFail($orderId);
-
-        if ($order->payment->method === 'paypal_standard') {
-            abort(404);
-        }
-
-        if ( core()->getConfigData('delivery_time_slot.settings.general.status') ) {
-            $deliveryTimeSlot = $this->deliveryTimeSlotsOrdersRepository->findOneByField('order_id', $orderId);
-
-            $timeSlotData = [];
-            if ( $deliveryTimeSlot ) {
-                foreach ($order->items as $key => $item) {
-                    if ($item->type == 'configurable') {
-                        $item = $item->child;
-                    }
-
-                    $deliveryTimeSlot = $this->deliveryTimeSlotsOrdersRepository->with('time_slot')->findOneWhere([
-                        'order_id'      => $orderId,
-                        'customer_id'   => $order->customer_id
-                    ]);
-
-                    if ( $deliveryTimeSlot ) {
-                        $this->orderSlots->push([
-                            'items'         => [$item],
-                            'timeOrderSlot' => $deliveryTimeSlot
-                        ]);
-                    }
-                }
-            }
-
-            $timeSlotData = $this->orderSlots;
-
-            return view($this->_config['view'], compact('order', 'timeSlotData'));
-        } else {
-
-            return view($this->_config['view'], compact('order'));    
-        }
     }
 
     /**
@@ -119,104 +46,123 @@ class InvoiceController extends Controller
      */
     public function view($id)
     {
-        $invoice = $this->invoiceRepository->findOrFail($id);
+        $invoice = $this->invoice->findOrFail($id);
+
         $orderId = $invoice->order_id;
 
-        if ( core()->getConfigData('delivery_time_slot.settings.general.status') ) {
-            $deliveryTimeSlot = $this->deliveryTimeSlotsOrdersRepository->findOneByField('order_id', $orderId);
+        $timeFormat = core()->getConfigData('delivery_time_slot.settings.general.time_format');
 
-            $timeSlotData = [];
-            if ( $deliveryTimeSlot ) {
-                foreach ($invoice->items as $key => $item) {
-                    if ($item->type == 'configurable') {
-                        $item = $item->child;
-                    }
+        $timeSlotOrder = $this->timeSlotOrderRepository->findOneByField('order_id', $orderId);
+    
+        $timeSlotData = [];
 
-                    $deliveryTimeSlot = $this->deliveryTimeSlotsOrdersRepository->with('time_slot')->findOneWhere([
-                        'order_id'      => $orderId
-                    ]);
+        $timeSlot = $this->timeSlotOrderRepository->with('time_slot')->findOneByField('order_id', $orderId);
 
-                    if ( $deliveryTimeSlot ) {
-                        $this->orderSlots->push([
-                            'items'         => [$item],
-                            'timeOrderSlot' => $deliveryTimeSlot
-                        ]);
-                    }
-                }
+        if ($timeSlotOrder) {
+            $timeStamp1 = strtotime($timeSlot->start_time);
+
+            $timeStamp2 = strtotime($timeSlot->end_time);
+    
+            $startTime = date('H:i A', $timeStamp1);
+     
+            $endTime = date('H:i A', $timeStamp2);   
+                
+            if ($timeFormat == "12 hours") { 
+                $startTime = date('h:i A', $timeStamp1);
+    
+                $endTime = date('h:i A', $timeStamp2);  
             }
 
-            $timeSlotData = $this->orderSlots;
+            $timeSlot['start_time'] = $startTime;
 
-            return view($this->_config['view'], compact('invoice', 'timeSlotData'));
-        } else {
+            $timeSlot['end_time'] = $endTime;
 
-            return view($this->_config['view'], compact('invoice'));    
+            $timeSlot['delivery_date'] = \Carbon\Carbon::parse($timeSlot['delivery_date'])->format('M d,Y');
+
+            $timeSlot['delivery_day'] = ucfirst($timeSlot['delivery_day']);
+
+            foreach ($invoice->items as $key => $item) {
+                if ($item->type == 'configurable') {
+                    $item = $item->child;
+                }
+
+                $this->orderSlots->push([
+                    'items'         => [$item],
+                    'timeOrderSlot' => $timeSlot ?? null,
+                ]);
+            }
         }
+
+        $timeSlotData = $this->orderSlots;
+
+        return view('delivery_time_slot::admin.sales.invoices.view')->with([
+            'invoice'      => $invoice,
+            'timeSlotData' => $timeSlotData,
+        ]);
     }
 
-    /**
+     /**
      * Print and download the for the specified resource.
      *
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function print($id)
+    public function printInvoice($id)
     {
         $invoice = $this->invoiceRepository->findOrFail($id);
+
         $orderId = $invoice->order_id;
 
-        if ( core()->getConfigData('delivery_time_slot.settings.general.status') ) {
-            $deliveryTimeSlot = $this->deliveryTimeSlotsOrdersRepository->findOneByField('order_id', $orderId);
+        $timeFormat = core()->getConfigData('delivery_time_slot.settings.general.time_format');
 
-            $timeSlotData = [];
-            if ( $deliveryTimeSlot ) {
-                foreach ($invoice->items as $key => $item) {
-                    if ($item->type == 'configurable') {
-                        $item = $item->child;
-                    }
+        $timeSlotOrder = $this->timeSlotOrderRepository->findOneByField('order_id', $orderId);
+    
+        $timeSlotData = [];
 
-                    $deliveryTimeSlot = $this->deliveryTimeSlotsOrdersRepository->with('time_slot')->findOneWhere([
-                        'order_id'      => $orderId
-                    ]);
+        $timeSlot = $this->timeSlotOrderRepository->with('time_slot')->findOneByField('order_id', $orderId);
 
-                    if ( $deliveryTimeSlot ) {
-                        $this->orderSlots->push([
-                            'items'         => [$item],
-                            'timeOrderSlot' => $deliveryTimeSlot
-                        ]);
-                    }
+        if ($timeSlotOrder) {
+            if ($timeSlot->time_slot) {
+                $timeStamp1 = strtotime($timeSlot->time_slot->start_time);
+
+                $timeStamp2 = strtotime($timeSlot->time_slot->end_time);
+    
+                $startTime = date('H:i A', $timeStamp1);
+     
+                $endTime = date('H:i A', $timeStamp2);   
+                
+                if ($timeFormat == "12 hours") { 
+                    $startTime = date('h:i A', $timeStamp1);
+    
+                    $endTime = date('h:i A', $timeStamp2);  
                 }
+
+                $timeSlot['start_time'] = $startTime;
+
+                $timeSlot['end_time'] = $endTime;
+
+                $timeSlot['delivery_date'] = \Carbon\Carbon::parse($timeSlot['delivery_date'])->format('M d,Y');
+
+                $timeSlot['delivery_day'] = ucfirst($timeSlot['delivery_day']);
             }
+    
+            foreach ($invoice->items as $key => $item) {
+                if ($item->type == 'configurable') {
+                    $item = $item->child;
+                }
 
-            $timeSlotData = $this->orderSlots;
-
-            $html = view('admin::sales.invoices.pdf', compact('invoice', 'timeSlotData'))->render();
-        } else {
-            $html = view('admin::sales.invoices.pdf', compact('invoice'))->render();
+                $this->orderSlots->push([
+                    'items'         => [$item],
+                    'timeOrderSlot' => $timeSlot ?? null,
+                ]);
+            }
         }
 
-        return PDF::loadHTML($this->adjustArabicAndPersianContent($html))
-            ->setPaper('a4')
-            ->download('invoice-' . $invoice->created_at->format('d-m-Y') . '.pdf');
-    }
+        $timeSlotData = $this->orderSlots;
 
-    /**
-     * Adjust arabic and persian content.
-     *
-     * @param  string  $html
-     * @return string
-     */
-    private function adjustArabicAndPersianContent($html)
-    {
-        $arabic = new \ArPHP\I18N\Arabic();
-
-        $p = $arabic->arIdentify($html);
-
-        for ($i = count($p) - 1; $i >= 0; $i -= 2) {
-            $utf8ar = $arabic->utf8Glyphs(substr($html, $p[$i - 1], $p[$i] - $p[$i - 1]));
-            $html   = substr_replace($html, $utf8ar, $p[$i - 1], $p[$i] - $p[$i - 1]);
-        }
-
-        return $html;
+        return $this->downloadPDF(
+            view('admin::sales.invoices.pdf', compact('invoice', 'timeSlotData'))->render(),
+            'invoice-' . $invoice->created_at->format('d-m-Y')
+        );
     }
 }

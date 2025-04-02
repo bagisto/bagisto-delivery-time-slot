@@ -2,8 +2,21 @@
 
 namespace Webkul\DeliveryTimeSlot\Providers;
 
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\ServiceProvider;
+use Webkul\Checkout\Facades\Cart;
+use Webkul\Admin\Http\Controllers\Sales\InvoiceController as BaseInvoiceController;
+use Webkul\DeliveryTimeSlot\Http\Controllers\Admin\Sales\InvoiceController;
+use Webkul\Admin\Http\Controllers\Sales\OrderController as BaseOrderController;
+use Webkul\DeliveryTimeSlot\Http\Controllers\Admin\Sales\OrderController;
+use Webkul\Admin\Http\Controllers\Sales\ShipmentController as BaseShipmentController;
+use Webkul\DeliveryTimeSlot\Http\Controllers\Admin\Sales\ShipmentController;
+use Webkul\Shop\Http\Controllers\API\OnepageController as BaseOnepageController;
+use Webkul\DeliveryTimeSlot\Http\Controllers\Shop\API\OnepageController;
+use Webkul\Shop\Http\Controllers\Customer\Account\OrderController as BaseShopOrdeController;
+use Webkul\DeliveryTimeSlot\Http\Controllers\Shop\Account\Customer\OrderController as ShopOrderController;
 
 class DeliveryTimeSlotServiceProvider extends ServiceProvider
 {
@@ -14,83 +27,66 @@ class DeliveryTimeSlotServiceProvider extends ServiceProvider
      */
     public function boot(Router $router)
     {
-        include __DIR__ . '/../Http/front-routes.php';
+        Route::middleware('web')->group( __DIR__ . '/../Routes/api.php');
 
-        include __DIR__ . '/../Http/admin-routes.php';
+        Route::middleware('web')->group( __DIR__ . '/../Routes/admin-routes.php');
 
         $this->app->register(ModuleServiceProvider::class);
 
         $this->app->register(EventServiceProvider::class);
 
+        $this->app->bind(Cart::class);
+
+        $this->app->bind(BaseOrderController::class, OrderController::class);
+
+        $this->app->bind(BaseInvoiceController::class, InvoiceController::class);
+
+        $this->app->bind(BaseShipmentController::class, ShipmentController::class);
+
+        $this->app->bind(BaseOnepageController::class, OnepageController::class);
+
+        $this->app->bind(BaseShopOrdeController::class, ShopOrderController::class);
+
+        Blade::anonymousComponentPath(__DIR__ . '/../Resources/views/components', 'delivery-time-slot');
+
         $this->loadMigrationsFrom(__DIR__ . '/../Database/Migrations');
 
-        $this->loadTranslationsFrom(__DIR__ . '/../Resources/lang', 'delivery-time-slot');
+        $this->loadTranslationsFrom(__DIR__ . '/../Resources/lang', 'delivery_time_slot');
 
-        $this->loadViewsFrom(__DIR__ . '/../Resources/views', 'delivery-time-slot');
+        $this->loadViewsFrom(__DIR__ . '/../Resources/views', 'delivery_time_slot');
 
-        /*** Default Theme page override ***/
+        /**
+         * Default Theme page override
+         */
         $this->publishes([
-            __DIR__ . '/../Resources/views/shop/default/checkout/onepage.blade.php' => resource_path('themes/default/views/checkout/onepage.blade.php'),
-        ]);
-
-        $this->publishes([
-            __DIR__ . '/../Resources/views/shop/default/checkout/onepage/review.blade.php' => resource_path('themes/default/views/checkout/onepage/review.blade.php'),
+            __DIR__ . '/../Resources/views/admin/configuration/'=> resource_path('views/vendor/admin/configuration/'),
         ]);
 
         $this->publishes([
-            __DIR__ . '/../Resources/views/shop/default/checkout/onepage/shipping.blade.php' => resource_path('themes/default/views/checkout/onepage/shipping.blade.php'),
+            __DIR__ . '/../Resources/views/shop/default/checkout/onepage' => resource_path('views/vendor/shop/checkout/onepage'),
         ]);
 
         $this->publishes([
-            __DIR__ . '/../Resources/views/shop/default/customers/account/orders' => resource_path('themes/default/views/customers/account/orders'),
+            __DIR__ . '/../Resources/views/admin/sales/invoices' => resource_path('views/vendor/admin/sales/invoices'),
         ]);
 
         $this->publishes([
-            __DIR__ . '/../Resources/views/shop/default/emails/sales/' => resource_path('themes/default/views/emails/sales'),
-        ]);
-
-        /*** Velocity Theme page override ***/
-        $this->publishes([
-            __DIR__ . '/../Resources/views/shop/velocity/checkout/onepage.blade.php' => resource_path('themes/velocity/views/checkout/onepage.blade.php'),
+            __DIR__ . '/../Resources/views/shop/default/customers/account/orders' => resource_path('views/vendor/shop/customers/account/orders'),
         ]);
 
         $this->publishes([
-            __DIR__ . '/../Resources/views/shop/velocity/checkout/onepage/review.blade.php' => resource_path('themes/velocity/views/checkout/onepage/review.blade.php'),
+            __DIR__ . '/../Resources/views/shop/default/emails/sales/' => resource_path('views/vendor/shop/emails/sales'),
         ]);
-
-        $this->publishes([
-            __DIR__ . '/../Resources/views/shop/velocity/checkout/onepage/shipping.blade.php' => resource_path('themes/velocity/views/checkout/onepage/shipping.blade.php'),
-        ]);
-
-	    $this->publishes([
-            __DIR__ . '/../Resources/views/shop/velocity/customers/account/orders/' => resource_path('themes/velocity/views/customers/account/orders'),
-        ]);
-
-        $this->publishes([
-            __DIR__ . '/../Resources/views/shop/velocity/emails/sales/' => resource_path('themes/velocity/views/emails/sales'),
-        ]);
-
-        /*** Admin page override ***/
-        $this->publishes([
-            __DIR__ . '/../Resources/views/admin/sales' => resource_path('views/vendor/admin/sales'),
-        ]);
-
-        $this->publishes([
-            __DIR__ . '/../Resources/views/emails/' => resource_path('views/vendor/emails/'),
-        ]);
-
-        /*** Assets of themes override ***/
-        // $this->publishes([
-        //     __DIR__ . '/../../publishable/assets' => public_path('themes/default/assets'),
-        // ], 'public');
-
-        // $this->publishes([
-        //     __DIR__ . '/../../publishable/assets/' => public_path('themes/velocity/assets'),
-        // ], 'public');
-
+        
         $this->overrideModels();
 
         $this->loadViewsFrom(__DIR__ . '/../Resources/views', 'delivery_time_slot');
+ 
+        if (core()->getConfigData('delivery_time_slot.settings.general.enable_time_slot')) {
+           $this->mergeConfigFrom(
+              dirname(__DIR__) . '/Config/admin-menu.php', 'menu.admin'
+            );
+        }
     }
 
     /**
@@ -98,28 +94,15 @@ class DeliveryTimeSlotServiceProvider extends ServiceProvider
      *
      * @return void
      */
-    public function register()
-    {
-        $this->registerConfig();
-    }
-
+     public function register()
+     {
+        $this->mergeConfigFrom(
+            dirname(__DIR__) .'/Config/system.php',
+            'core'
+        );
+     }
+       
     /**
-     * Register package config.
-     *
-     * @return void
-     */
-    protected function registerConfig()
-    {
-        $this->mergeConfigFrom(
-            dirname(__DIR__) . '/Config/system.php', 'core'
-        );
-
-        $this->mergeConfigFrom(
-            dirname(__DIR__) . '/Config/admin-menu.php', 'menu.admin'
-        );
-    }
-
-     /**
      * Override the existing models
      */
     public function overrideModels()

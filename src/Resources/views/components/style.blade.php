@@ -1,0 +1,1 @@
+@bagistoVite(['src/Resources/assets/css/app.css', 'src/Resources/assets/css/admin.css'], 'delivery-time-slot')
